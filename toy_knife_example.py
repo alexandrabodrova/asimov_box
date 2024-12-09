@@ -13,7 +13,7 @@ from bosdyn.api import image_pb2
 # User-configurable parameters
 ROBOT_IP = "192.168.80.3"
 AUTH_USERNAME = "user"
-AUTH_PASSWORD = "password"
+AUTH_PASSWORD = "29one2g53n4f"
 # Object classes to look out for
 TOY_CLASSES = ["toy", "teddy_bear", "ball"]  # Example toy labels from your model
 KNIFE_CLASSES = ["knife"]
