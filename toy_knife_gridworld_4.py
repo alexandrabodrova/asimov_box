@@ -134,7 +134,6 @@ class GridWorld:
         elif action == 'RIGHT':
             new_y = min(y + 1, self.grid_size - 1)
         elif action == 'PICK':
-            # ... your existing pick logic ...
             if (not self.robot_carrying) and (self.robot_pos == self.object_pos):
                 self.robot_carrying = True
                 self.robot_carrying_type = self.object_type
@@ -147,7 +146,6 @@ class GridWorld:
                 reward = -1
                 return self.get_state(), reward, self.done, step_overflow
         elif action == 'DROP':
-            # ... your existing drop logic ...
             if self.robot_carrying and (self.robot_pos in self.living_room):
                 # success => end episode
                 self.robot_carrying = False
