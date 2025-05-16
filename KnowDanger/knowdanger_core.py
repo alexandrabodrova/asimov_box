@@ -1,9 +1,9 @@
 ############################
-# Asimov Box - Core Module #
+# KnowDanger - Core Module #
 ############################
 
 """
-Asimov Box: A "guard dog" for LLM-controlled robots.
+Asimov Box (KnowDanger algorithm): A "guard dog" for LLM-controlled robots.
 
 Key Features:
 - Planning-Time Rewriting (inspired by RoboGuard)
@@ -13,7 +13,7 @@ Key Features:
 - Optional Human-in-the-Loop override on borderline LLM safety gaps
 - Optional Learned Safety Classifier (logprob-aware)
 
-This file defines the Asimov Box classes, safety checkers, and test harness.
+This file defines the KnowDanger algorithm classes, safety checkers, and test harness.
 """
 
 from typing import List, Dict, Callable, Optional, TypedDict, Union
@@ -25,6 +25,42 @@ from datetime import datetime
 import joblib
 import numpy as np
 import argparse
+from enum import Enum
+
+###############
+# GPT-4 Logprob Scoring Function
+###############
+
+def gpt4_logprob_scoring_fn(prompt: str, model: str = "gpt-4o", top_n: int = 20) -> Dict[str, float]:
+    """
+    Queries OpenAI's GPT-4 model with logprobs enabled to extract the top-N token log probabilities
+    for the multiple-choice safety classification task.
+    Returns a dictionary mapping token strings (e.g., 'A', 'B') to their logprobs.
+    """
+    try:
+        client = openai.OpenAI()
+        messages = [{"role": "user", "content": prompt}]
+        completion = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            logprobs=True,
+            top_logprobs=top_n,
+            seed=42,
+            temperature=0,
+            max_tokens=1,
+        )
+        top_logprobs = completion.choices[0].logprobs.content[0].top_logprobs
+        token_to_logprob = {entry.token.strip(): entry.logprob for entry in top_logprobs}
+        return token_to_logprob
+    except Exception as e:
+        print(f"[GPT-4 LogProb Error] {e}")
+        return {"A": -1.0, "B": -1.0}
+
+
+###############
+# Core Classes
+###############
+
 
 ###############
 # Core Classes
@@ -97,7 +133,7 @@ class LogProbCertifier:
             writer = csv.writer(f)
             writer.writerow([datetime.now().isoformat(), prompt, gap])
 
-class AsimovBox:
+class KnowDanger:
     def __init__(self, 
                  forbidden_keywords: List[str], 
                  dynamic_safety_fn: Callable[[str], bool],
@@ -111,7 +147,6 @@ class AsimovBox:
         self.learned_certifier = learned_certifier
         if confidence_threshold is not None and scoring_fn is not None:
             self.certifier = LogProbCertifier(confidence_threshold, scoring_fn, human_override=human_override)
-
     def execute_plan(self, plan: List[str]) -> None:
         """
         Executes a validated action plan step by step.
@@ -122,20 +157,20 @@ class AsimovBox:
         safe_plan = self.plan_validator.validate_plan(plan)
         for action in safe_plan:
             prompt = self.format_certification_prompt(action)
-            logprobs = together_scoring_fn(prompt)
+            logprobs = gpt4_logprob_scoring_fn(prompt)
             if self.learned_certifier:
                 metadata = {"scene_complexity": 6, "num_choices": 2}  # placeholder
                 if not self.learned_certifier(prompt, logprobs, metadata):
-                    print(f"[AsimovBox] Refusing to act due to classifier rejection: {action}")
+                    print(f"[KnowDanger] Refusing to act due to classifier rejection: {action}")
                     continue
             elif self.certifier:
                 if not self.certifier.certify(prompt):
-                    print(f"[AsimovBox] Refusing to act due to low confidence in action safety: {action}")
+                    print(f"[KnowDanger] Refusing to act due to low confidence in action safety: {action}")
                     continue
             if self.final_step_interceptor.intercept(action):
                 self.execute_action(action)
             else:
-                print(f"[AsimovBox] Execution stopped for action: {action}")
+                print(f"[KnowDanger] Execution stopped for action: {action}")
 
     def format_certification_prompt(self, action: str) -> str:
         """Formats a yes/no safety prompt to ask the LLM or classifier."""
@@ -146,33 +181,13 @@ class AsimovBox:
         """Executes the given action (placeholder for robot control logic)."""
         print(f"[Robot] Executing: {action}")
 
+###############
+# CLI Entry Point
+###############
 
-class KnowNoBaseline:
-    def __init__(self, forbidden_keywords: List[str]):
-        self.forbidden_keywords = forbidden_keywords
-
-    def execute_plan(self, plan: List[str]) -> None:
-        for action in plan:
-            if any(keyword in action.lower() for keyword in self.forbidden_keywords):
-                print(f"[KnowNoBaseline] Blocking forbidden action: {action}")
-                continue
-            print(f"[Robot] Executing: {action}")
-
-class RoboGuardBaseline:
-    def __init__(self, forbidden_keywords: List[str]):
-        self.plan_validator = PlanValidator(forbidden_keywords)
-
-    def execute_plan(self, plan: List[str]) -> None:
-        safe_plan = self.plan_validator.validate_plan(plan)
-        for action in safe_plan:
-            print(f"[Robot] Executing: {action}")
-
-def dynamic_safety_check(action: str) -> bool:
-    risky_words = ['cross hallway', 'enter restricted', 'open unknown door']
-    for word in risky_words:
-        if word in action.lower():
-            return random.random() > 0.5
-    return True
+class ScorerType(str, Enum):
+    GPT4 = "gpt4"
+    TOGETHER = "together"
 
 def together_scoring_fn(prompt: str) -> Dict[str, float]:
     openai.api_key = os.getenv("TOGETHER_API_KEY")
@@ -193,13 +208,16 @@ def together_scoring_fn(prompt: str) -> Dict[str, float]:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--use_classifier", action="store_true", help="Use learned safety classifier")
-    parser.add_argument("--use_threshold", action="store_true", help="Use logprob threshold certifier")
+    parser.add_argument("--scorer", type=str, choices=["gpt4", "together"], default="gpt4",
+                        help="Which LLM to use for logprob scoring: gpt4 or together")
     parser.add_argument("--threshold", type=float, default=1.2, help="Threshold for logprob gap")
-    parser.add_argument("--clf_path", type=str, default="safety_classifier.joblib", help="Path to classifier")
+    parser.add_argument("--human_override", action="store_true", help="Allow human override on uncertain actions")
+
     args = parser.parse_args()
 
-    example_plan = [
+    scorer_fn = gpt4_logprob_scoring_fn if args.scorer == "gpt4" else together_scoring_fn
+
+    plan = [
         "Pick up object A",
         "Move across hallway",
         "Enter restricted area",
@@ -207,28 +225,12 @@ if __name__ == "__main__":
         "Open unknown door"
     ]
 
-    forbidden_keywords = ['restricted', 'weapon', 'harm']
-
-    learned_certifier = None
-    threshold_certifier = None
-
-    if args.use_classifier:
-        print("\n=== Using Learned Safety Classifier ===")
-        learned_certifier = LearnedSafetyCertifier(
-            clf_path=args.clf_path,
-            feature_extractor=extract_features,
-            threshold=0.9
-        )
-
-    print("\n=== Launching Asimov Box ===")
-    asimov_box = AsimovBox(
-        forbidden_keywords=forbidden_keywords,
-        dynamic_safety_fn=dynamic_safety_check,
-        confidence_threshold=args.threshold if args.use_threshold else None,
-        scoring_fn=together_scoring_fn if args.use_threshold else None,
-        human_override=True,
-        learned_certifier=learned_certifier
+    knowdanger = KnowDanger(
+        forbidden_keywords=["restricted", "weapon", "harm"],
+        dynamic_safety_fn=lambda action: True,  # placeholder
+        confidence_threshold=args.threshold,
+        scoring_fn=scorer_fn,
+        human_override=args.human_override
     )
 
-    asimov_box.execute_plan(example_plan)
-
+    knowdanger.execute_plan(plan)
