@@ -40,19 +40,15 @@ Annotated:
 
     def rewrite_and_filter(self, plan: List[str], save_path: str = "rewrites_log.txt") -> List[str]:
         safe_plan = []
-                with open(save_path, "w") as logfile:
+        with open(save_path, "w") as logfile:
             for action in plan:
                 annotated = self.rewrite(action)
                 print(f"[Rewritten] {annotated}")
-                logfile.write(f"Original: {action}
-Annotated: {annotated}
-
-")
-            print(f"[Rewritten] {annotated}")
-            if self.contains_unsafe_predicate(annotated):
-                print(f"[Blocked by RoboGuard filter] Unsafe action: {action}")
-                continue
-            safe_plan.append(action)
+                logfile.write(f"Original: {action}\nAnnotated: {annotated}\n\n")
+                if self.contains_unsafe_predicate(annotated):
+                    print(f"[Blocked by RoboGuard filter] Unsafe action: {action}")
+                    continue
+                safe_plan.append(action)
         return safe_plan
 
 
@@ -76,7 +72,7 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
 
     if args.use_rewriter:
-        from knowdanger_core import KnowDanger  # import your actual core module
+        from KnowDanger import KnowDanger  # import your actual core module
         knowdanger = KnowDanger(
             forbidden_keywords=["restricted", "weapon", "harm"],
             dynamic_safety_fn=lambda action: True  # stub
