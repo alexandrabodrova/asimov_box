@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Full Evaluation: KnowDanger Box + Baselines across RoboGuard behaviors
+#export PYTHONPATH="/Users/abodrova/Desktop/Princeton/AsimovBox:/Users/abodrova/Desktop/Princeton/AsimovBox/RoboGuard/src:$PYTHONPATH"
 
 echo "Running batch evaluation of KnowDanger and all baselines..."
 python batch_run_roboguard_behaviors.py

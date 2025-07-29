@@ -15,7 +15,7 @@ Key Features:
 
 This file defines the KnowDanger algorithm classes, safety checkers, and test harness.
 """
-
+    
 from typing import List, Dict, Callable, Optional, TypedDict, Union
 import random
 import openai
@@ -26,6 +26,9 @@ import joblib
 import numpy as np
 import argparse
 from enum import Enum
+
+from RoboGuard1.generator import ContextualGrounding
+from RoboGuard1.synthesis import ControlSynthesis
 
 ###############
 # GPT-4 Logprob Scoring Function
@@ -61,11 +64,6 @@ def gpt4_logprob_scoring_fn(prompt: str, model: str = "gpt-4o", top_n: int = 20)
 # Core Classes
 ###############
 
-
-###############
-# Core Classes
-###############
-
 class PlanValidator:
     def __init__(self, forbidden_keywords: List[str]) -> None:
         self.forbidden_keywords = forbidden_keywords
@@ -80,6 +78,19 @@ class PlanValidator:
             safe_plan.append(action)
         return safe_plan
 
+class RoboGuardRewriterWrapper:
+    def __init__(self, scene_context: Dict, llm_backend: str = "gpt-4") -> None:
+        if not ROBOGUARD_AVAILABLE:
+            raise ImportError("RoboGuard is not installed or cannot be imported.")
+        self.rewriter = RoboGuardRewriter(llm_backend=llm_backend)
+        self.scene_context = scene_context
+
+    def rewrite_plan(self, plan: List[str], prompt: str) -> List[str]:
+        try:
+            return self.rewriter.rewrite(prompt, plan, self.scene_context)
+        except Exception as e:
+            print(f"[RoboGuardRewriterWrapper] Rewriting failed: {e}")
+            return plan
 class FinalStepInterceptor:
     def __init__(self, dynamic_safety_fn: Callable[[str], bool]) -> None:
         self.dynamic_safety_fn = dynamic_safety_fn
@@ -140,7 +151,12 @@ class KnowDanger:
                  confidence_threshold: Optional[float] = None,
                  scoring_fn: Optional[Callable[[str], Dict[str, float]]] = None,
                  human_override: bool = True,
-                 learned_certifier: Optional[Callable[[str, Dict[str, float], Dict], bool]] = None) -> None:
+                 learned_certifier: Optional[Callable[[str, Dict[str, float], Dict], bool]] = None,
+                 use_roboguard: bool = True,
+                 scene_context: Optional[Dict] = None) -> None:
+        self.use_roboguard = use_roboguard and ROBOGUARD_AVAILABLE
+        self.scene_context = scene_context or {}
+        
         self.plan_validator = PlanValidator(forbidden_keywords)
         self.final_step_interceptor = FinalStepInterceptor(dynamic_safety_fn)
         self.certifier = None
@@ -212,6 +228,7 @@ if __name__ == "__main__":
                         help="Which LLM to use for logprob scoring: gpt4 or together")
     parser.add_argument("--threshold", type=float, default=1.2, help="Threshold for logprob gap")
     parser.add_argument("--human_override", action="store_true", help="Allow human override on uncertain actions")
+    parser.add_argument("--use_roboguard", action="store_true", help="Enable RoboGuard plan rewriting")
 
     args = parser.parse_args()
 
@@ -230,7 +247,9 @@ if __name__ == "__main__":
         dynamic_safety_fn=lambda action: True,  # placeholder
         confidence_threshold=args.threshold,
         scoring_fn=scorer_fn,
-        human_override=args.human_override
+        human_override=args.human_override,
+        use_roboguard=args.use_roboguard,
+        scene_context=scene_context
     )
 
     knowdanger.execute_plan(plan)

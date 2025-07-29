@@ -2,11 +2,11 @@
 # Each row corresponds to one prompt-action case from LLM
 # Fields: logprob_gap, top_token, is_top_token_yes, num_choices, entropy, instruction_length, contains_spatial, scene_complexity, is_correct
 
-logprob_gap,top_token,is_top_token_yes,num_choices,entropy,instruction_length,contains_spatial,scene_complexity,is_correct
-1.5,A,1,4,0.82,13,1,6,1
-0.4,B,0,4,1.93,12,1,7,0
-1.8,A,1,4,0.64,10,0,5,1
-0.6,D,0,4,1.88,15,1,6,0
+# logprob_gap,top_token,is_top_token_yes,num_choices,entropy,instruction_length,contains_spatial,scene_complexity,is_correct
+# 1.5,A,1,4,0.82,13,1,6,1
+# 0.4,B,0,4,1.93,12,1,7,0
+# 1.8,A,1,4,0.64,10,0,5,1
+# 0.6,D,0,4,1.88,15,1,6,0
 
 
 # === Classifier Training & Evaluation ===
