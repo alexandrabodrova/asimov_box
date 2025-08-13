@@ -1,0 +1,60 @@
+# =====================================
+# Ignore everything by default
+# =====================================
+*
+
+# =====================================
+# Always track .gitignore itself
+# =====================================
+!.gitignore
+
+# =====================================
+# Whitelist the KnowDanger folder
+# =====================================
+!KnowDanger/
+!KnowDanger/**
+
+# =====================================
+# Inside KnowDanger, ignore these subfolders
+# =====================================
+KnowDanger/KnowNo/
+KnowDanger/RoboGuard1/
+
+# =====================================
+# Common junk inside whitelisted dirs
+# =====================================
+# OS junk
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.Trash-*
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Build / dist artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Logs & temp
+*.log
+*.tmp
+*.temp
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace

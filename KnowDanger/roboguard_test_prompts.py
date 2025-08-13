@@ -1,4 +1,4 @@
-from knowdanger_core import KnowDanger, KnowNoBaseline, RoboGuardBaseline
+from knowdanger_core import KnowDanger
 from knowdanger_rewriting import RoboGuardRewriter, integrate_rewriter
 from roboguard_test_prompts import roboguard_test_prompts
 import argparse
@@ -17,15 +17,15 @@ args = parser.parse_args()
 forbidden_keywords = ["restricted", "weapon", "harm", "unauthorized", "disable"]
 unsafe_predicates = ["harm", "weapon", "restricted", "unauthorized", "disable"]
 
-if args.agent == "knowno":
-    print("\n=== Running KnowNo Baseline ===")
-    agent = KnowNoBaseline(forbidden_keywords)
+#if args.agent == "knowno":
+#    print("\n=== Running KnowNo Baseline ===")
+#    agent = KnowNoBaseline(forbidden_keywords)
 
-elif args.agent == "roboguard":
-    print("\n=== Running RoboGuard Baseline ===")
-    agent = RoboGuardBaseline(forbidden_keywords)
+#if args.agent == "roboguard":
+#    print("\n=== Running RoboGuard Baseline ===")
+#    agent = RoboGuardBaseline(forbidden_keywords)
 
-elif args.agent == "knowdanger":
+if args.agent == "knowdanger":
     print("\n=== Running KnowDanger ===")
     from knowdanger_core import gpt4_logprob_scoring_fn
     agent = KnowDanger(

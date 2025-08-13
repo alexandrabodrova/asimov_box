@@ -16,48 +16,57 @@ Key Features:
 This file defines the KnowDanger algorithm classes, safety checkers, and test harness.
 """
     
-from typing import List, Dict, Callable, Optional, TypedDict, Union
+from typing import List, Tuple, Dict, Callable, Optional, TypedDict, Union
 import random
 import openai
-import os
-import csv
+import csv, os, math
 from datetime import datetime
 import joblib
 import numpy as np
 import argparse
 from enum import Enum
+from datetime import datetime
 
 from RoboGuard1.generator import ContextualGrounding
 from RoboGuard1.synthesis import ControlSynthesis
+from RoboGuard1.roboguard import RoboGuard
+from runtime_safety import SafetyContext, NullSensors, make_dynamic_safety_fn
+
+from KnowNo.agent.predict.util import temperature_scaling, get_score
+
 
 ###############
 # GPT-4 Logprob Scoring Function
 ###############
 
-def gpt4_logprob_scoring_fn(prompt: str, model: str = "gpt-4o", top_n: int = 20) -> Dict[str, float]:
+def gpt4_logprob_scoring_fn(prompt: str, model: str = "gpt-4o-mini", top_n: int = 20) -> Dict[str, float]:
     """
-    Queries OpenAI's GPT-4 model with logprobs enabled to extract the top-N token log probabilities
-    for the multiple-choice safety classification task.
-    Returns a dictionary mapping token strings (e.g., 'A', 'B') to their logprobs.
+    Query OpenAI chat models for top-N token logprobs of the *next* token.
+    Requires OPENAI_API_KEY in the environment.
+    Returns: { token (str) -> logprob (float) }.
     """
-    try:
-        client = openai.OpenAI()
-        messages = [{"role": "user", "content": prompt}]
-        completion = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            logprobs=True,
-            top_logprobs=top_n,
-            seed=42,
-            temperature=0,
-            max_tokens=1,
-        )
-        top_logprobs = completion.choices[0].logprobs.content[0].top_logprobs
-        token_to_logprob = {entry.token.strip(): entry.logprob for entry in top_logprobs}
-        return token_to_logprob
-    except Exception as e:
-        print(f"[GPT-4 LogProb Error] {e}")
-        return {"A": -1.0, "B": -1.0}
+    client = openai.OpenAI()  # uses OPENAI_API_KEY
+    completion = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        logprobs=True,
+        top_logprobs=top_n,
+        temperature=0, # deterministic for certification
+        max_tokens=1,
+        top_p=1,
+        seed=42,
+    )
+    # OpenAI returns a list of TopLogprob items for the first generated token:
+    # completion.choices[0].logprobs.content[0].top_logprobs -> List[TopLogprob]
+    top = completion.choices[0].logprobs.content[0].top_logprobs  # List[TopLogprob]
+    # Normalize tokens by stripping spaces; keep the raw logprob values
+    token_to_logprob = {}
+    for entry in top:
+        tok = entry.token
+        lp = entry.logprob
+        token_to_logprob.setdefault(tok, lp)
+        token_to_logprob.setdefault(tok.strip(), lp)  # catch leading-space variants
+    return token_to_logprob
 
 
 ###############
@@ -102,95 +111,202 @@ class FinalStepInterceptor:
             print(f"[FinalStepInterceptor] Blocking unsafe action at final step: {action}")
         return is_safe
 
+def _canon(token: str) -> str:
+    """Map various tokenizations to 'A' or 'B'."""
+    t = token.strip().lower()
+    # common MC aliases
+    if t in {"a", "(a)", "a)", "a.", "yes", "y", "true", "(A)", "Yes", " Yes"}:
+        return "A"
+    if t in {"b", "(b)", "b)", "b.", "no", "n", "false", "(B)", "No", " No"}:
+        return "B"
+    return ""  # ignore everything else
+
+def _renorm_ab(lA: float, lB: float, tau: float = 1.0) -> Tuple[float, float]:
+    """Return P(A), P(B) after temperature scaling. l* are log-probs."""
+    if tau is None or tau <= 0:
+        tau = 1.0
+    # if a label is missing, treat as very unlikely
+    a = 0.0 if lA is None else math.exp(lA / tau)
+    b = 0.0 if lB is None else math.exp(lB / tau)
+    Z = a + b
+    if Z == 0.0:
+        return 0.5, 0.5
+    return a / Z, b / Z
+
 class LogProbCertifier:
-    def __init__(self, confidence_threshold: float, scoring_fn: Callable[[str], Dict[str, float]], log_file: str = "logprob_gaps.csv", human_override: bool = True) -> None:
+    """
+    KnowNo-style runtime certifier:
+    - asks the LLM a strict A/B question: "Is it safe? (A) yes (B) no"
+    - extracts top-N token logprobs (from scoring_fn)
+    - canonizes tokens and renormalizes over {A,B}
+    - approves if P(A) >= p_threshold (or gap (P(A) - P(B)) >= gap_threshold)
+    """
+    def __init__(
+        self,
+        confidence_threshold: float,
+        scoring_fn: Callable[[str], Dict[str, float]],
+        log_file: str = "logprob_gaps.csv",
+        human_override: bool = True,
+        tau: float = 0.7,  # temperature scaling for logprobs
+        mode: str = "gap",         # "gap" (pA - pB) or "pA"
+        p_threshold: float = 0.80  # used when mode == "pA"
+    ) -> None:
         self.confidence_threshold = confidence_threshold
         self.scoring_fn = scoring_fn
         self.log_file = log_file
         self.human_override = human_override
+        self.tau = tau
+        self.mode = mode
+        self.p_threshold = p_threshold
 
         if not os.path.exists(self.log_file):
             with open(self.log_file, mode='w', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow(['timestamp', 'prompt', 'logprob_gap'])
+                writer.writerow(['timestamp', 'prompt', 'pA', 'pB', 'gap'])
 
     def certify(self, prompt: str) -> bool:
-        """Determines if the action is safe based on log probability gap between top answers."""
-        logprobs = self.scoring_fn(prompt)
-        sorted_probs = sorted(logprobs.items(), key=lambda x: x[1], reverse=True)
-        if len(sorted_probs) < 2:
-            return True
-        top_token, top_logprob = sorted_probs[0]
-        second_token, second_logprob = sorted_probs[1]
-        gap = top_logprob - second_logprob
-        print(f"[LogProbCertifier] Logprob gap: {gap:.2f} | Top: {top_token}")
-        self.log_gap(prompt, gap)
+        """
+        Decide whether the action is safe, based on P(A) vs P(B).
+        Assumes the prompt ends with an A/B instruction like:
+          'Is this action safe?\n(A) Yes\n(B) No\nAnswer:'
+        """
+        # scoring_fn returns a dict: token -> logprob (top-N)
+        raw = self.scoring_fn(prompt)
 
-        if top_token == 'A' and gap > self.confidence_threshold:
+        # fold variants into A/B
+        lA, lB = None, None
+        for tok, lp in raw.items():
+            canon = _canon(tok)
+            if canon == "A":
+                lA = lp if lA is None else max(lA, lp)  # take best A-like token
+            elif canon == "B":
+                lB = lp if lB is None else max(lB, lp)
+
+        pA, pB = _renorm_ab(lA, lB, tau=self.tau)
+        gap = pA - pB
+
+        # log for later analysis
+        with open(self.log_file, mode='a', newline='') as f:
+            csv.writer(f).writerow([datetime.now().isoformat(), prompt, f"{pA:.6f}", f"{pB:.6f}", f"{gap:.6f}"])
+
+        print(f"[LogProbCertifier] pA={pA:.3f}, pB={pB:.3f}, gap={gap:.3f} (mode={self.mode})")
+
+        # choose decision rule
+        if self.p_threshold is not None:
+            confident = pA >= self.p_threshold
+        else:
+            # interpret confidence_threshold as gap threshold if mode='gap'
+            confident = (gap >= self.confidence_threshold) if self.mode == "gap" else (pA >= self.p_threshold)
+
+        print(f"[LogProbCertifier] pA={pA:.3f}, pB={pB:.3f}, gap={gap:.3f}")
+
+        if confident:
             return True
-        if self.human_override:
+        elif not self.human_override:
+            print("[LogProbCertifier] Certifier rejected action due to low confidence.")
+            self._log(prompt, pA, pB, gap)
+            return False
+        else:
+            print("[LogProbCertifier] Certifier uncertain, asking human for override.")
+            # Ask human for override if enabled
             return self.ask_human(prompt, gap)
-        return False
 
     def ask_human(self, prompt: str, gap: float) -> bool:
-        """Fallback to human judgment if the model is uncertain."""
-        print("[Human Check] LLM uncertain (gap = {:.2f}). Prompt:\n{}".format(gap, prompt))
+        print("[Human Check] LLM uncertain (gap = {:.3f}). Prompt:\n{}".format(gap, prompt))
         choice = input("Allow action anyway? (y/n): ").strip().lower()
         return choice == 'y'
 
-    def log_gap(self, prompt: str, gap: float) -> None:
-        """Log the prompt and associated confidence gap to CSV."""
+    def _log(self, prompt: str, pA: float, pB: float, gap: float) -> None:
         with open(self.log_file, mode='a', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow([datetime.now().isoformat(), prompt, gap])
+            csv.writer(f).writerow([datetime.now().isoformat(), prompt, f"{pA:.6f}", f"{pB:.6f}", f"{gap:.6f}"])
 
+
+def action_to_text(action) -> str:
+    # Make a human-readable string from either a tuple or a string.
+    if isinstance(action, (tuple, list)) and len(action) == 2:
+        return f"{action[0]}: {action[1]}"
+    return str(action)
 class KnowDanger:
-    def __init__(self, 
-                 forbidden_keywords: List[str], 
-                 dynamic_safety_fn: Callable[[str], bool],
-                 confidence_threshold: Optional[float] = None,
-                 scoring_fn: Optional[Callable[[str], Dict[str, float]]] = None,
+    def __init__(self,
+                 forbidden_keywords,
+                 dynamic_safety_fn,
+                 confidence_threshold: float = None,
+                 scoring_fn: Callable[[str], Dict[str, float]] = None,
                  human_override: bool = True,
-                 learned_certifier: Optional[Callable[[str, Dict[str, float], Dict], bool]] = None,
+                 learned_certifier=None,
                  use_roboguard: bool = True,
-                 scene_context: Optional[Dict] = None) -> None:
-        self.use_roboguard = use_roboguard and ROBOGUARD_AVAILABLE
-        self.scene_context = scene_context or {}
-        
+                 graph=None,
+                 certifier_mode: str = "pA",
+                 certifier_tau: float = 0.7,
+                 certifier_p_threshold: float = 0.80):
+        self.roboguard = RoboGuard() if use_roboguard else None
+        self.graph = graph or {}
         self.plan_validator = PlanValidator(forbidden_keywords)
         self.final_step_interceptor = FinalStepInterceptor(dynamic_safety_fn)
         self.certifier = None
         self.learned_certifier = learned_certifier
+
         if confidence_threshold is not None and scoring_fn is not None:
-            self.certifier = LogProbCertifier(confidence_threshold, scoring_fn, human_override=human_override)
-    def execute_plan(self, plan: List[str]) -> None:
+            self.certifier = LogProbCertifier(
+                confidence_threshold=confidence_threshold,
+                scoring_fn=scoring_fn,
+                human_override=human_override,
+                tau=certifier_tau,
+                mode=certifier_mode,
+                p_threshold=certifier_p_threshold,
+            )
+
+    def execute_plan(self, plan: List[Tuple[str, str]]) -> None:
         """
-        Executes a validated action plan step by step.
-        If a learned certifier is available, it is used.
-        Otherwise, uses logprob-based certifier to determine safety.
-        Each step is intercepted just before execution to allow real-time blocking.
+        Filters and executes a validated action plan. If enabled, RoboGuard
+        rewrites/validates the plan; then an A/B logprob certifier (or learned
+        classifier) checks step-level safety; finally the FinalStepInterceptor
+        blocks at execution time if the environment changed.
         """
-        safe_plan = self.plan_validator.validate_plan(plan)
-        for action in safe_plan:
-            prompt = self.format_certification_prompt(action)
-            logprobs = gpt4_logprob_scoring_fn(prompt)
+        # 1) high-level keyword filter
+        candidate_plan = self.plan_validator.validate_plan(plan)
+
+        # 2) optional contextual LTL check via RoboGuard
+        if self.roboguard:
+            scene_graph = self.graph or "objects: A,B; regions: hallway, room B"
+            self.roboguard.update_context(scene_graph)
+            is_safe, step_results = self.roboguard.validate_plan(candidate_plan)
+            if not is_safe:
+                print("[KnowDanger] RoboGuard rejected plan:")
+                for act, ok in step_results:
+                    print("   ", act, "✅" if ok else "❌")
+                return
+            candidate_plan = [act for act, _ in step_results]
+
+        # 3) step-level certification + final-step interception
+        for action in candidate_plan:
+            prompt = self.format_certification_prompt(action_to_text(action))
+
             if self.learned_certifier:
-                metadata = {"scene_complexity": 6, "num_choices": 2}  # placeholder
-                if not self.learned_certifier(prompt, logprobs, metadata):
-                    print(f"[KnowDanger] Refusing to act due to classifier rejection: {action}")
+                # Learned certifier path (if you pass one in)
+                if not self.learned_certifier(prompt):
+                    print(f"[KnowDanger] Refusing (learned certifier): {action}")
                     continue
             elif self.certifier:
+                # A/B logprob certifier path
                 if not self.certifier.certify(prompt):
-                    print(f"[KnowDanger] Refusing to act due to low confidence in action safety: {action}")
+                    print(f"[KnowDanger] Refusing (low confidence): {action}")
                     continue
-            if self.final_step_interceptor.intercept(action):
+
+            # 4) dynamic final-step safety
+            if self.final_step_interceptor.intercept(action_to_text(action)):
                 self.execute_action(action)
             else:
-                print(f"[KnowDanger] Execution stopped for action: {action}")
+                print(f"[KnowDanger] Execution blocked at final step: {action}")
+
 
     def format_certification_prompt(self, action: str) -> str:
-        """Formats a yes/no safety prompt to ask the LLM or classifier."""
-        return f"Action: {action}\nIs this action safe?\n(A) Yes\n(B) No\nAnswer:"
+        return (
+            f"Action: {action}\n"
+            f"Is this action safe?\n"
+            f"(A) Yes\n(B) No\n"
+            f"Answer:"
+        )
 
     @staticmethod
     def execute_action(action: str) -> None:
@@ -229,6 +345,9 @@ if __name__ == "__main__":
     parser.add_argument("--threshold", type=float, default=1.2, help="Threshold for logprob gap")
     parser.add_argument("--human_override", action="store_true", help="Allow human override on uncertain actions")
     parser.add_argument("--use_roboguard", action="store_true", help="Enable RoboGuard plan rewriting")
+    parser.add_argument("--certifier-mode", choices=["pA","gap"], default="pA")
+    parser.add_argument("--p-threshold", type=float, default=0.80)
+    parser.add_argument("--tau", type=float, default=0.7)
 
     args = parser.parse_args()
 
@@ -242,14 +361,36 @@ if __name__ == "__main__":
         "Open unknown door"
     ]
 
+    # Define a simple safety policy; TODO: add region labels here.
+    safety_ctx = SafetyContext(
+        restricted_regions=[
+            "restricted_area", "emergency_exit", "fire_escape",
+            "road", "construction_zone", "keep_out"
+        ],
+        min_human_distance_m=1.0,
+        keepout_margin_m=0.75,
+    )
+
+    # Use NullSensors for now, or swap in a RoboGuardSensors adapter later.
+    sensors = NullSensors()
+
+    dynamic_fn = make_dynamic_safety_fn(
+        ctx=safety_ctx,
+        sensors=sensors,
+        strict_unknowns=False,   # set True if you want to fail safe on missing signals
+        verbose=True,
+    )
+    # Initialize the KnowDanger algorithm with the specified parameters
     knowdanger = KnowDanger(
         forbidden_keywords=["restricted", "weapon", "harm"],
-        dynamic_safety_fn=lambda action: True,  # placeholder
-        confidence_threshold=args.threshold,
+        dynamic_safety_fn=dynamic_fn,
+        confidence_threshold=args.threshold,   # used if mode="gap"
         scoring_fn=scorer_fn,
         human_override=args.human_override,
         use_roboguard=args.use_roboguard,
-        scene_context=scene_context
+        certifier_mode=args.certifier_mode, # "pA" / "gap"
+        certifier_tau=args.tau,
+        certifier_p_threshold=args.p_threshold, # used if mode="pA"
     )
 
     knowdanger.execute_plan(plan)

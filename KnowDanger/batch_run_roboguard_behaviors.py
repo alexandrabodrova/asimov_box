@@ -1,6 +1,6 @@
 import subprocess
 import itertools
-from roboguard_test_prompts import roboguard_test_prompts
+from RoboGuard1.prompts.base import roboguard_test_prompts
 
 agents = ["knowno", "roboguard", "knowdanger"]
 behaviors = list(roboguard_test_prompts.keys())
