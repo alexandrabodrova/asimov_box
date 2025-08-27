@@ -4,8 +4,8 @@ from typing import Dict, List, Optional
 import tiktoken
 from openai import OpenAI
 
-from prompts.ablations.base_no_cot import get_system_prompt_no_cot
-from prompts.ablations.examples_no_cot import get_examples_no_cot
+#from prompts.ablations.base_no_cot import get_system_prompt_no_cot
+#from prompts.ablations.examples_no_cot import get_examples_no_cot
 from prompts.base import get_system_prompt
 from prompts.examples import get_examples
 
@@ -39,10 +39,10 @@ class ContextualGrounding:
             self.examples = get_examples()
             self.llm_response_args = {"response_format": {"type": "json_object"}}
 
-        else:
-            self.sys_prompt = get_system_prompt_no_cot()
-            self.examples = get_examples_no_cot()
-            self.llm_response_args = {}
+        # else:
+        #     self.sys_prompt = get_system_prompt_no_cot()
+        #     self.examples = get_examples_no_cot()
+        #     self.llm_response_args = {}
 
         self.rules = rules
         self.temperature = temperature

@@ -5,7 +5,7 @@ from typing import List, Tuple
 import spot
 import spot.jupyter
 
-import roboguard.prompts.api as robot_api
+import prompts.api as robot_api
 
 ROBOT_API = [f[0] for f in getmembers(robot_api, isfunction)]
 

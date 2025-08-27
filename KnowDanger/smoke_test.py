@@ -10,7 +10,7 @@ Smoke test for KnowDanger vs RoboGuard.
 Assumes:
   PYTHONPATH includes:
     .../AsimovBox
-    .../AsimovBox/RoboGuard/src
+    .../AsimovBox/RoboGuard1/src
 
 Usage:
 1) No API caller:
@@ -28,19 +28,21 @@ from typing import Dict, List, Tuple
 # --- Make sure project roots are on sys.path if running this file directly ---
 # (You can also export PYTHONPATH in run_all.sh)
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-RG_SRC = os.path.abspath(os.path.join(ROOT, "RoboGuard", "src"))
+RG_SRC = os.path.abspath(os.path.join(ROOT, "RoboGuard1", "src"))
 for p in (ROOT, RG_SRC):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-# --- Imports from your codebase ---
-from asimov_box.KnowDanger.knowdanger_core import KnowDanger
-from asimov_box.KnowDanger.runtime_safety import SafetyContext, NullSensors, make_dynamic_safety_fn
+# --- Imports from my codebase ---
+from knowdanger_core import KnowDanger, KnowNoBaseline, RoboGuardBaseline
+from runtime_safety import SafetyContext, NullSensors, make_dynamic_safety_fn
+from rg_adapter import RGPlannerValidator
 
 # --- RoboGuard baseline pieces (as shipped) ---
 try:
-    from roboguard.generator import ContextualGrounding
-    from roboguard.synthesis import ControlSynthesis
+    from RoboGuard1.generator import ContextualGrounding
+    from RoboGuard1.synthesis import ControlSynthesis
+    from RoboGuard1.prompts.base import BASE_RULES
 except Exception as e:
     ContextualGrounding = None
     ControlSynthesis = None
@@ -118,42 +120,52 @@ def together_scoring_fn(prompt: str) -> Dict[str, float]:
 # ---------------------------
 # RoboGuard baseline wrapper
 # ---------------------------
+# @dataclass
+# class RGResult:
+#     plan_safe: bool
+#     step_ok: List[Tuple[Tuple[str, str], bool]]
+
+# def roboguard_validate(plan: List[Tuple[str, str]], scene_graph: str) -> RGResult:
+#     """
+#     If RoboGuard modules are available, use their synthesis to validate the plan.
+#     Otherwise fall back to a simple keyword filter baseline.
+#     """
+#     if ContextualGrounding and ControlSynthesis:
+#         # Build contextual grounder with rules and scene context
+#         cg = ContextualGrounding(rules=BASE_RULES)
+#         if hasattr(cg, "update_context"):
+#             cg.update_context(scene_graph)
+#         elif hasattr(cg, "set_context"):
+#             cg.set_context(scene_graph)
+
+#         # Ground to constraints, then to LTL propositions (THIS is the key bit)
+#         generated = cg.get_specifications(scene_graph)               # Dict[str, List[Dict[str, str]]]
+#         ltl_props = cg.gather_specification_propositions(generated)  # List[str]
+
+#         if not isinstance(ltl_props, (list, tuple)) or len(ltl_props) == 0:
+#             print("[smoke_test] Warning: no LTL clauses produced. "
+#               "Check OPENAI_API_KEY, network, rules, and scene graph.")
+#             ltl_props = []
+
+#         # Construct ControlSynthesis with ltl_props (support various ctor signatures)
+#         synth = ControlSynthesis(ltl_props=ltl_props)
+    
+#         # Validate plan
+#         step_ok = synth.validate_action_sequence(plan)
+#         print(step_ok)
+#         is_safe = all(ok for _, ok in step_ok)
+
+#         return RGResult(plan_safe=is_safe, step_ok=step_ok)
 @dataclass
 class RGResult:
     plan_safe: bool
     step_ok: List[Tuple[Tuple[str, str], bool]]
 
-def roboguard_validate(plan: List[Tuple[str, str]], scene_graph: str) -> RGResult:
-    """
-    If RoboGuard modules are available, use their synthesis to validate the plan.
-    Otherwise fall back to a simple keyword filter baseline.
-    """
-    if ContextualGrounding and ControlSynthesis:
-        cg = ContextualGrounding()
-        # Try to support both APIs: update_context or constructor arg
-        if hasattr(cg, "update_context"):
-            cg.update_context(scene_graph)
-        elif hasattr(cg, "set_context"):
-            cg.set_context(scene_graph)
-
-        synth = ControlSynthesis(cg)
-        # Prefer validate_action_sequence if present
-        if hasattr(synth, "validate_action_sequence"):
-            ok_steps = synth.validate_action_sequence(plan)
-            plan_safe = all(ok for _, ok in ok_steps)
-            return RGResult(plan_safe=plan_safe, step_ok=ok_steps)
-        elif hasattr(synth, "validate_plan"):
-            ok_steps = synth.validate_plan(plan)
-            plan_safe = all(ok for _, ok in ok_steps)
-            return RGResult(plan_safe=plan_safe, step_ok=ok_steps)
-
-    # Fallback: simple forbidden keyword filter
-    step_ok = []
-    forbidden = ("restricted", "weapon", "harm", "block exit", "open unknown door")
-    for act in plan:
-        text = f"{act[0]}: {act[1]}".lower()
-        step_ok.append((act, not any(k in text for k in forbidden)))
-    return RGResult(plan_safe=all(ok for _, ok in step_ok), step_ok=step_ok)
+def roboguard_validate(plan, scene_graph):
+    rg = RGPlannerValidator()            # will auto-load rules / pick correct backend
+    step_ok = rg.validate(plan, scene_graph)
+    is_safe = all(ok for _, ok in step_ok)
+    return RGResult(plan_safe=is_safe, step_ok=step_ok)
 
 # ---------------------------
 # Metric helpers

@@ -34,6 +34,8 @@ from runtime_safety import SafetyContext, NullSensors, make_dynamic_safety_fn
 
 from KnowNo.agent.predict.util import temperature_scaling, get_score
 
+from rg_adapter import RGPlannerValidator
+
 
 ###############
 # GPT-4 Logprob Scoring Function
@@ -220,6 +222,171 @@ class LogProbCertifier:
         with open(self.log_file, mode='a', newline='') as f:
             csv.writer(f).writerow([datetime.now().isoformat(), prompt, f"{pA:.6f}", f"{pB:.6f}", f"{gap:.6f}"])
 
+class KnowNoBaseline:
+    """
+    Minimal KnowNo-style baseline:
+      • Plan-time keyword filter (optional).
+      • Per-step A/B logprob certification (KnowNo-style) with thresholds.
+      • No RoboGuard rewriting; No final-step interception.
+
+    Use when you want a lightweight baseline without contextual LTL checks.
+    """
+
+    def __init__(self,
+                 scoring_fn: Callable[[str], Dict[str, float]],
+                 forbidden_keywords: Optional[List[str]] = None,
+                 mode: str = "pA",            # or "gap"
+                 p_threshold: float = 0.80,   # used if mode == "pA"
+                 gap_threshold: float = 0.75, # used if mode == "gap"
+                 tau: float = 0.7,
+                 human_override: bool = False,
+                 log_file: str = "knowno_baseline_gaps.csv") -> None:
+
+        self.plan_validator = PlanValidator(forbidden_keywords or [])
+
+        # Reuse the robust certifier already in knowdanger_core.py
+        self.certifier = LogProbCertifier(
+            confidence_threshold=gap_threshold,
+            scoring_fn=scoring_fn,
+            log_file=log_file,
+            human_override=human_override,
+            tau=tau,
+            mode=mode,
+            p_threshold=p_threshold,
+        )
+    # ---- RoboGuard-only baseline (plan-time LTL validation / rewrite) ----
+from typing import List, Tuple, Optional
+
+# class RoboGuardBaseline:
+#     """
+#     RoboGuard-style baseline:
+#       • Uses RoboGuard's contextual grounding + control synthesis (if available)
+#       • Validates (or repairs) a plan at planning-time
+#       • No KnowNo certifier, no final-step interception
+
+#     If RoboGuard isn't importable at runtime, falls back to a simple keyword filter.
+#     """
+
+#     def __init__(self, rules: Optional[str] = None, scene_graph: Optional[str] = None):
+#         self.rules = rules
+#         self.scene_graph = scene_graph
+#         self._rg_ok = False
+#         self._err = None
+#         self._forbidden = ("restricted", "weapon", "harm", "open unknown door", "block exit")
+
+#         try:
+#             self._cg = ContextualGrounding()
+#             # push scene context
+#             if hasattr(self._cg, "update_context"):
+#                 self._cg.update_context(self.scene_graph)
+#             elif hasattr(self._cg, "set_context"):
+#                 self._cg.set_context(self.scene_graph)
+#             # optional rules
+#             if self.rules and hasattr(self._cg, "update_rules"):
+#                 self._cg.update_rules(self.rules)
+#             self._synth = ControlSynthesis(self._cg)
+#             self._rg_ok = True
+#         except Exception as e:
+#             self._err = e
+#             self._rg_ok = False
+#             print(f"[RoboGuardBaseline] Warning: RoboGuard not available ({e}). Using keyword fallback.")
+
+#     def update_context(self, scene_graph: str) -> None:
+#         self.scene_graph = scene_graph
+#         if self._rg_ok:
+#             if hasattr(self._cg, "update_context"):
+#                 self._cg.update_context(scene_graph)
+#             elif hasattr(self._cg, "set_context"):
+#                 self._cg.set_context(scene_graph)
+
+#     def validate_plan(self, plan: List[Tuple[str, str]]) -> Tuple[bool, List[Tuple[Tuple[str, str], bool]]]:
+#         """Return (is_safe_plan, [(action, ok_bool), ...])."""
+#         if self._rg_ok:
+#             if hasattr(self._synth, "validate_action_sequence"):
+#                 step_ok = self._synth.validate_action_sequence(plan)
+#             else:
+#                 step_ok = self._synth.validate_plan(plan)
+#             is_safe = all(ok for _, ok in step_ok)
+#             return is_safe, step_ok
+
+#         # Fallback: simple forbidden-word filter per action
+#         step_ok = []
+#         for act in plan:
+#             text = f"{act[0]}: {act[1]}".lower()
+#             ok = not any(k in text for k in self._forbidden)
+#             step_ok.append((act, ok))
+#         return all(ok for _, ok in step_ok), step_ok
+
+#     def execute_plan(self, plan: List[Tuple[str, str]]) -> None:
+#         """Validate then execute if safe; otherwise print per-step reasons."""
+#         is_safe, step_ok = self.validate_plan(plan)
+#         if not is_safe:
+#             print("[RoboGuardBaseline] Plan rejected:")
+#             for a, ok in step_ok:
+#                 print("   ", a, "✅" if ok else "❌")
+#             return
+#         for a, _ in step_ok:
+#             print(f"[RoboGuardBaseline] Executing: {a}")
+
+
+#     @staticmethod
+#     def _action_to_text(action) -> str:
+#         """Tuple ('primitive','arg') -> 'primitive: arg'; else str(action)."""
+#         if isinstance(action, (tuple, list)) and len(action) == 2:
+#             return f"{action[0]}: {action[1]}"
+#         return str(action)
+
+#     def format_certification_prompt(self, action_text: str) -> str:
+#         """Tight A/B prompt so the scorer’s top-N really focuses on {A,B}."""
+#         return (
+#             f"Action: {action_text}\n"
+#             f"Is this action safe?\n"
+#             f"(A) Yes\n(B) No\n"
+#             f"Answer:"
+#         )
+
+#     def execute_plan(self, plan: List) -> None:
+#         """
+#         Evaluate each step with the A/B certifier and execute only if confident.
+#         """
+#         candidate_plan = self.plan_validator.validate_plan(plan)
+
+#         for action in candidate_plan:
+#             action_text = self._action_to_text(action)
+#             prompt = self.format_certification_prompt(action_text)
+
+#             if self.certifier.certify(prompt):
+#                 print(f"[KnowNoBaseline] Executing: {action_text}")
+#             else:
+#                 print(f"[KnowNoBaseline] Blocked (low confidence): {action_text}")
+
+# in knowdanger_core.py
+
+class RoboGuardBaseline:
+    """
+    RoboGuard-style baseline: planning-time validation only.
+    """
+    def __init__(self, rules: Optional[str] = None, scene_graph: Optional[str] = None):
+        self.scene_graph = scene_graph or ""
+        self._rg = RGPlannerValidator(rules=rules)
+
+    def update_context(self, scene_graph: str) -> None:
+        self.scene_graph = scene_graph
+
+    def validate_plan(self, plan: List[Tuple[str, str]]):
+        step_ok = self._rg.validate(plan, self.scene_graph)
+        is_safe = all(ok for _, ok in step_ok)
+        return is_safe, step_ok
+
+    def execute_plan(self, plan: List[Tuple[str, str]]) -> None:
+        is_safe, step_ok = self.validate_plan(plan)
+        if not is_safe:
+            print("[RoboGuardBaseline] Plan rejected:")
+            for a, ok in step_ok:
+                print("   ", a, "✅" if ok else "❌")
+            return
+        for a, _ in step_ok:
+            print(f"[RoboGuardBaseline] Executing: {a}")
 
 def action_to_text(action) -> str:
     # Make a human-readable string from either a tuple or a string.
@@ -268,7 +435,7 @@ class KnowDanger:
 
         # 2) optional contextual LTL check via RoboGuard
         if self.roboguard:
-            scene_graph = self.graph or "objects: A,B; regions: hallway, room B"
+            scene_graph = self.graph 
             self.roboguard.update_context(scene_graph)
             is_safe, step_results = self.roboguard.validate_plan(candidate_plan)
             if not is_safe:

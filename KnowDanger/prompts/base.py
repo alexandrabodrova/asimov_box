@@ -2,8 +2,8 @@ import importlib
 import importlib.resources
 import os
 
-file_root = importlib.resources.files("roboguard")
-path = file_root / "prompts/api.py"
+file_root = importlib.resources.files("RoboGuard1.prompts")
+path = file_root / "api.py"
 assert os.path.exists(path), f"{path} doesn't exist"
 
 
