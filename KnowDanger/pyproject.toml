@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "knowdanger"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = []  # keep vendor deps out; you install them separately
+
+[tool.setuptools.packages.find]
+where = ["src"]

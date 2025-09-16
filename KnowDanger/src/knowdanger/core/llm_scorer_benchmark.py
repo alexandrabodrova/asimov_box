@@ -1,7 +1,7 @@
 import time
 import csv
 from typing import Dict
-from knowdanger_core import gpt4_logprob_scoring_fn, together_scoring_fn
+from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_core_3 import gpt4_logprob_scoring_fn, together_scoring_fn
 
 # Sample prompts for benchmarking
 prompts = [

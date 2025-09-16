@@ -27,14 +27,14 @@ import argparse
 from enum import Enum
 from datetime import datetime
 
-from RoboGuard1.generator import ContextualGrounding
+from asimov_box.KnowDanger.RoboGuard1.generator_1 import ContextualGrounding
 from RoboGuard1.synthesis import ControlSynthesis
 from RoboGuard1.roboguard import RoboGuard
-from runtime_safety import SafetyContext, NullSensors, make_dynamic_safety_fn
+from asimov_box.KnowDanger.src.knowdanger.core.runtime_safety import SafetyContext, NullSensors, make_dynamic_safety_fn
 
 from KnowNo.agent.predict.util import temperature_scaling, get_score
 
-from rg_adapter import RGPlannerValidator
+from asimov_box.KnowDanger.src.knowdanger.adapters.rg_adapter import RGPlannerValidator
 
 Action = Union[str, Tuple[str, str], List[str]]  # support str or 2-tuple/list
 

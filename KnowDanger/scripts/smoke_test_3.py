@@ -5,7 +5,7 @@ import argparse, csv, math, sys
 from typing import List, Tuple, Dict, Union, Callable
 
 from RoboGuard1.roboguard import RoboGuard
-from knowdanger_core import KnowDanger, action_to_text
+from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_core_4 import KnowDanger, action_to_text
 
 Action = Union[str, Tuple[str, str], List[str]]
 
@@ -126,6 +126,8 @@ def main() -> int:
         certifier_p_threshold=args.p_threshold, # if mode='pA'
     )
     kd.set_scene_graph(scene_graph)  # push same graph into KD’s RG
+    specs = kd.set_scene_graph(scene_graph)
+    print("Number of compiled specs:", len(specs))
 
     # capture KD executed actions
     kd.executed = []
@@ -178,7 +180,7 @@ def main() -> int:
             if kd.certifier is not None:
                 kd.certifier.scoring_fn = scorer
             else:
-                from knowdanger_core import LogProbCertifier
+                from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_core_4 import LogProbCertifier
                 kd.certifier = LogProbCertifier(
                     confidence_threshold=args.p_threshold,
                     scoring_fn=scorer,

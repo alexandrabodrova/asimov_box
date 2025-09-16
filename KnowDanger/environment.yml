@@ -1,0 +1,26 @@
+name: knowdanger_venv-311
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - spot
+  - pip
+  - openai
+  - jupyterlab
+  - jupytext
+  - ipykernel
+  - json
+  - time
+  - matplotlib
+  - numpy
+  - scipy
+  - networkx
+  - typing
+  - tiktoken
+  - pydantic_settings
+  - pprint
+  - pip:
+      # Local editable installs (paths are relative to this environment.yml)
+      - -e ./RoboGuard
+      - -e ./SPINE
+      - -e .

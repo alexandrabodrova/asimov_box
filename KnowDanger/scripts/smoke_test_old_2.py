@@ -27,7 +27,7 @@ import math
 import sys
 from typing import Optional, List, Tuple, Dict, Union, Callable
 
-from knowdanger_core import (
+from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_core_4 import (
     KnowDanger,
     RoboGuardBaseline,
     LogProbCertifier,
@@ -208,9 +208,9 @@ def main() -> int:
 
     # KD scorer selection
     if args.scorer == "gpt4":
-        from knowdanger_core import gpt4_logprob_scoring_fn as scorer_factory  # type: ignore
+        from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_core_4 import gpt4_logprob_scoring_fn as scorer_factory  # type: ignore
     elif args.scorer == "together":
-        from knowdanger_core import together_scoring_fn as scorer_factory      # type: ignore
+        from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_core_4 import together_scoring_fn as scorer_factory      # type: ignore
     else:
         scorer_factory = None  # stub per-case below
 

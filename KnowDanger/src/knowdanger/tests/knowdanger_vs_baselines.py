@@ -1,5 +1,5 @@
-from knowdanger_core import KnowDanger, KnowNoBaseline, RoboGuardBaseline
-from knowdanger_rewriting import RoboGuardRewriter, integrate_rewriter
+from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_core_3 import KnowDanger, KnowNoBaseline, RoboGuardBaseline
+from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_rewriting import RoboGuardRewriter, integrate_rewriter
 import argparse
 import csv
 from datetime import datetime
@@ -58,7 +58,7 @@ elif args.agent == "roboguard":
 
 elif args.agent == "knowdanger":
     print("\n=== Running KnowDanger ===")
-    from knowdanger_core import gpt4_logprob_scoring_fn
+    from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_core_3 import gpt4_logprob_scoring_fn
     agent = KnowDanger(
         forbidden_keywords=forbidden_keywords,
         dynamic_safety_fn=lambda x: True,

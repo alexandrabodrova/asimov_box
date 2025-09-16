@@ -1,6 +1,6 @@
-from knowdanger_core import KnowDanger
-from knowdanger_rewriting import RoboGuardRewriter, integrate_rewriter
-from roboguard_test_prompts import roboguard_test_prompts
+from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_core_3 import KnowDanger
+from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_rewriting import RoboGuardRewriter, integrate_rewriter
+from asimov_box.KnowDanger.src.knowdanger.tests.roboguard_test_prompts import roboguard_test_prompts
 import argparse
 import csv
 from datetime import datetime
@@ -27,7 +27,7 @@ unsafe_predicates = ["harm", "weapon", "restricted", "unauthorized", "disable"]
 
 if args.agent == "knowdanger":
     print("\n=== Running KnowDanger ===")
-    from knowdanger_core import gpt4_logprob_scoring_fn
+    from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_core_3 import gpt4_logprob_scoring_fn
     agent = KnowDanger(
         forbidden_keywords=forbidden_keywords,
         dynamic_safety_fn=lambda x: True,

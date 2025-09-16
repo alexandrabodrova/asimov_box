@@ -39,7 +39,7 @@ import sys
 from dataclasses import dataclass
 from typing import Optional, List, Tuple, Dict, Union, Callable, Any
 
-from knowdanger_core import RGBridge
+from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_core_4 import RGBridge
 
 # ---------- Action normalization ----------
 
@@ -120,7 +120,7 @@ def load_rg_rules() -> str:
 
 def import_rg():
     """Return (ContextualGrounding, ControlSynthesis) from upstream or vendored copy."""
-    from RoboGuard1.generator import ContextualGrounding  # type: ignore
+    from asimov_box.KnowDanger.RoboGuard1.generator_1 import ContextualGrounding  # type: ignore
     from RoboGuard1.synthesis import ControlSynthesis     # type: ignore
     return ContextualGrounding, ControlSynthesis
 
@@ -310,7 +310,7 @@ def main() -> int:
 
     # ---- KnowDanger setup ----
     try:
-        from knowdanger_core import KnowDanger
+        from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_core_4 import KnowDanger
     except Exception as e:
         print(f"[ERROR] Could not import KnowDanger from knowdanger_core: {e}")
         return 2
@@ -367,7 +367,7 @@ def main() -> int:
                 else:
                     # Fallback: try to construct a simple certifier if KD exposes a helper
                     try:
-                        from knowdanger_core import LogProbCertifier  # type: ignore
+                        from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_core_4 import LogProbCertifier  # type: ignore
                         kd.certifier = LogProbCertifier(
                             confidence_threshold=args.p_threshold,
                             scoring_fn=scorer,

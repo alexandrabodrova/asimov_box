@@ -23,7 +23,7 @@ def _load_rules() -> str:
 def _import_rg():
     """Return (ContextualGrounding, ControlSynthesis) from whichever install is present."""
 
-    from RoboGuard1.generator import ContextualGrounding  # type: ignore
+    from asimov_box.KnowDanger.RoboGuard1.generator_1 import ContextualGrounding  # type: ignore
     from RoboGuard1.synthesis import ControlSynthesis     # type: ignore
     return ContextualGrounding, ControlSynthesis
 
