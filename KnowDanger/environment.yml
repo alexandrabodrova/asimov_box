@@ -19,6 +19,8 @@ dependencies:
   - tiktoken
   - pydantic_settings
   - pprint
+  - omegaconf
+  - seaborn
   - pip:
       # Local editable installs (paths are relative to this environment.yml)
       - -e ./RoboGuard

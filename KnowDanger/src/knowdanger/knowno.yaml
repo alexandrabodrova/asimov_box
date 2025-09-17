@@ -1,0 +1,4 @@
+# Optional KnowNo config (not strictly used by the adapter).
+alpha: 0.1
+ask_threshold_confidence: 0.7
+calibration_sets: []  # you can inject score lists here if you want fixed tau

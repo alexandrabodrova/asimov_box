@@ -1,6 +1,5 @@
-from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_core_3 import KnowDanger
-from asimov_box.KnowDanger.src.knowdanger.core.knowdanger_rewriting import RoboGuardRewriter, integrate_rewriter
-from asimov_box.KnowDanger.src.knowdanger.tests.roboguard_test_prompts import roboguard_test_prompts
+from knowdanger.core.knowdanger_core_3 import KnowDanger
+from knowdanger.core.knowdanger_rewriting import RoboGuardRewriter, integrate_rewriter
 import argparse
 import csv
 from datetime import datetime
