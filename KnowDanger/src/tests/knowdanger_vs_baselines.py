@@ -75,6 +75,7 @@ else:
 print(f"\n--- Executing Plan under '{args.attack}' attack scenario ---")
 plan = attack_scenarios[args.attack]
 log_file = f"roboguard_eval_{args.agent}_{args.attack}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+print(f"Log file: {log_file}")
 
 with open(log_file, "w", newline="") as f:
     writer = csv.writer(f)

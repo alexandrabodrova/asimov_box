@@ -1,0 +1,7 @@
+{
+    "alpha": 0.1,
+    "temperature": 1.0,
+    "normalize_logits": true,
+    "seed": 0
+  }
+  
