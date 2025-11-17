@@ -15,7 +15,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--scene", type=str, required=True, help="Scene module name under /scenes (e.g., example1_hazard_lab)")
     ap.add_argument("--alpha", type=float, default=0.1)
-    ap.add_argument("--ask-thresh", type=float, default=0.7)
+    ap.add_argument("--ask-thresh", type=float, default=0.6)
     args = ap.parse_args()
 
     kd = KnowDanger()
