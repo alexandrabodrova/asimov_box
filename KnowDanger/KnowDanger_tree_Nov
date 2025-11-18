@@ -1,0 +1,696 @@
+KnowDanger
+├── .DS_Store
+├── IntroPlan
+│   ├── IntroPlan_CP_Mobile.ipynb
+│   ├── IntroPlan_CP_Safe_Mobile.ipynb
+│   ├── IntroPlan_Mobile.ipynb
+│   ├── IntroPlan_MultiLabel_CP_Mobile.ipynb
+│   ├── IntroPlan_Safe_Mobile.ipynb
+│   ├── LICENSE
+│   ├── Llama_IntroPlan_CP_Mobile.ipynb
+│   ├── Llama_IntroPlan_Mobile.ipynb
+│   ├── README.md
+│   ├── cp_utils.py
+│   ├── data
+│   │   ├── mobile_manipulation.txt
+│   │   ├── mobile_manipulation_knowledge.txt
+│   │   ├── safe_mobile_calibration.txt
+│   │   ├── safe_mobile_knowledge.txt
+│   │   └── safe_mobile_test.txt
+│   ├── figs
+│   │   ├── teaser.pdf
+│   │   └── teaser.png
+│   ├── llm.py
+│   ├── metrics.py
+│   ├── process_results.py
+│   ├── prompt_init.py
+│   ├── requirements.txt
+│   └── utils.py
+├── LICENSE
+├── README.md
+├── RoboGuard
+│   ├── LICENSE
+│   ├── README.md
+│   ├── data
+│   │   └── perch_small.json
+│   ├── scripts
+│   │   ├── .ipynb_checkpoints
+│   │   │   ├── Untitled-checkpoint.ipynb
+│   │   │   └── example-checkpoint.ipynb
+│   │   ├── Untitled.ipynb
+│   │   ├── example.ipynb
+│   │   └── example.md
+│   ├── setup.py
+│   └── src
+│       ├── roboguard
+│       │   ├── __init__.py
+│       │   ├── __pycache__
+│       │   │   ├── __init__.cpython-311.pyc
+│       │   │   ├── generator.cpython-311.pyc
+│       │   │   ├── roboguard.cpython-311.pyc
+│       │   │   └── synthesis.cpython-311.pyc
+│       │   ├── eval
+│       │   │   ├── __init__.py
+│       │   │   ├── __pycache__
+│       │   │   │   ├── __init__.cpython-311.pyc
+│       │   │   │   └── eval.cpython-311.pyc
+│       │   │   └── eval.py
+│       │   ├── generator.py
+│       │   ├── prompts
+│       │   │   ├── __init__.py
+│       │   │   ├── __pycache__
+│       │   │   │   ├── __init__.cpython-311.pyc
+│       │   │   │   ├── api.cpython-311.pyc
+│       │   │   │   ├── base.cpython-311.pyc
+│       │   │   │   └── examples.cpython-311.pyc
+│       │   │   ├── ablations
+│       │   │   │   ├── __init__.py
+│       │   │   │   ├── __pycache__
+│       │   │   │   │   ├── __init__.cpython-311.pyc
+│       │   │   │   │   ├── base_no_cot.cpython-311.pyc
+│       │   │   │   │   └── examples_no_cot.cpython-311.pyc
+│       │   │   │   ├── base_no_cot.py
+│       │   │   │   └── examples_no_cot.py
+│       │   │   ├── api.py
+│       │   │   ├── base.py
+│       │   │   └── examples.py
+│       │   ├── roboguard.py
+│       │   └── synthesis.py
+│       └── roboguard.egg-info
+│           ├── PKG-INFO
+│           ├── SOURCES.txt
+│           ├── dependency_links.txt
+│           ├── requires.txt
+│           └── top_level.txt
+├── SPINE
+│   ├── .gitignore
+│   ├── README.md
+│   ├── docs
+│   │   └── spine.png
+│   ├── pyproject.toml
+│   ├── ros
+│   │   └── spine_ros
+│   │       ├── launch
+│   │       │   └── planner.launch
+│   │       ├── package.xml
+│   │       ├── scripts
+│   │       │   ├── graph_nav_node.py
+│   │       │   ├── graph_service.py
+│   │       │   ├── spine_node.py
+│   │       │   └── viz_graph.py
+│   │       ├── setup.py
+│   │       ├── src
+│   │       │   └── spine_ros
+│   │       │       ├── __init__.py
+│   │       │       └── imu_reader.py
+│   │       └── srv
+│   │           ├── AddNode.srv
+│   │           ├── Graph.srv
+│   │           └── Task.srv
+│   ├── scripts
+│   │   └── test_spine.py
+│   ├── setup.py
+│   └── src
+│       ├── spine
+│       │   ├── __pycache__
+│       │   │   ├── llm_logging.cpython-311.pyc
+│       │   │   └── spine.cpython-311.pyc
+│       │   ├── class_llm.py
+│       │   ├── llm_logging.py
+│       │   ├── mapping
+│       │   │   ├── __pycache__
+│       │   │   │   └── graph_util.cpython-311.pyc
+│       │   │   ├── frontiers.py
+│       │   │   ├── graph_sim.py
+│       │   │   └── graph_util.py
+│       │   ├── prompts
+│       │   │   ├── __init__.py
+│       │   │   ├── __pycache__
+│       │   │   │   ├── __init__.cpython-311.pyc
+│       │   │   │   ├── base.cpython-311.pyc
+│       │   │   │   ├── examples.cpython-311.pyc
+│       │   │   │   └── prompts.cpython-311.pyc
+│       │   │   ├── api.py
+│       │   │   ├── base.py
+│       │   │   ├── examples.py
+│       │   │   └── prompts.py
+│       │   ├── spine.py
+│       │   ├── spine_util.py
+│       │   └── viz
+│       │       ├── viz.py
+│       │       └── viz_ros.py
+│       └── spine.egg-info
+│           ├── PKG-INFO
+│           ├── SOURCES.txt
+│           ├── dependency_links.txt
+│           └── top_level.txt
+├── __pycache__
+│   ├── knowdanger_core.cpython-39.pyc
+│   ├── rg_adapter.cpython-39.pyc
+│   ├── roboguard_test_prompts.cpython-39.pyc
+│   └── runtime_safety.cpython-39.pyc
+├── configs
+│   └── knowno_cfg.json
+├── environment.yml
+├── lang-help
+│   ├── .DS_Store
+│   ├── .gitignore
+│   ├── .vscode
+│   │   ├── .style.yapf
+│   │   └── settings.json
+│   ├── README.md
+│   ├── agent
+│   │   ├── ambiguity
+│   │   │   ├── __init__.py
+│   │   │   ├── attribute_ambiguity.py
+│   │   │   ├── base_ambiguity.py
+│   │   │   ├── multi_step_ambiguity.py
+│   │   │   ├── multi_step_numeric_ambiguity.py
+│   │   │   ├── numeric_ambiguity.py
+│   │   │   ├── spatial_ambiguity.py
+│   │   │   └── syntactic_ambiguity.py
+│   │   ├── language_model.py
+│   │   ├── multiple_choice.py
+│   │   ├── predict
+│   │   │   ├── __init__.py
+│   │   │   ├── __pycache__
+│   │   │   │   ├── __init__.cpython-311.pyc
+│   │   │   │   ├── base_predictor.cpython-311.pyc
+│   │   │   │   ├── conformal_predictor.cpython-311.pyc
+│   │   │   │   ├── multi_step_conformal_predictor.cpython-311.pyc
+│   │   │   │   ├── set_predictor.cpython-311.pyc
+│   │   │   │   └── util.cpython-311.pyc
+│   │   │   ├── base_predictor.py
+│   │   │   ├── binary_predictor.py
+│   │   │   ├── conformal_predictor.py
+│   │   │   ├── ltt_predictor.py
+│   │   │   ├── multi_step_conformal_predictor.py
+│   │   │   ├── multi_step_top_predictor.py
+│   │   │   ├── set_predictor.py
+│   │   │   ├── top_predictor.py
+│   │   │   └── util.py
+│   │   └── task.py
+│   ├── data
+│   │   ├── .DS_Store
+│   │   ├── check_palm_test_result.py
+│   │   ├── convert_pkl_to_txt.py
+│   │   ├── convert_txt_to_pkl.py
+│   │   ├── query_lm.py
+│   │   ├── saycan
+│   │   │   └── archive
+│   │   │       ├── saycan_test_1
+│   │   │       │   ├── creative_multilabel_task.json
+│   │   │       │   ├── creative_singlelabel_task.json
+│   │   │       │   ├── multilabel_task.json
+│   │   │       │   └── singlelabel_task.json
+│   │   │       ├── saycan_test_2
+│   │   │       │   ├── creative_multilabel_task.json
+│   │   │       │   ├── creative_singlelabel_task.json
+│   │   │       │   ├── multilabel_task.json
+│   │   │       │   └── singlelabel_task.json
+│   │   │       ├── saycan_v1
+│   │   │       │   ├── ambiguous_task_gpt4.json
+│   │   │       │   ├── creative_ambiguous_task_gpt4.json
+│   │   │       │   └── creative_unambiguous_task_gpt4.json
+│   │   │       ├── saycan_v2
+│   │   │       │   ├── creative_multilabel_task.json
+│   │   │       │   ├── creative_singlelabel_task.json
+│   │   │       │   ├── multilabel_task.json
+│   │   │       │   └── singlelabel_task.json
+│   │   │       └── saycan_v3
+│   │   │           ├── creative_multilabel_task.json
+│   │   │           ├── creative_singlelabel_task.json
+│   │   │           ├── multilabel_task.json
+│   │   │           └── singlelabel_task.json
+│   │   ├── saycan_colab
+│   │   │   ├── creative_multilabel_task.json
+│   │   │   ├── creative_singlelabel_task.json
+│   │   │   ├── multilabel_task.json
+│   │   │   └── singlelabel_task.json
+│   │   ├── strip_empty_line.py
+│   │   ├── tabletop_default_env.png
+│   │   └── vanilla_answer
+│   │       ├── collect_binary_finetune_v3
+│   │       │   └── finetune
+│   │       │       ├── finetune.json
+│   │       │       ├── finetune_prepared_train.jsonl
+│   │       │       └── finetune_prepared_valid.jsonl
+│   │       └── collect_mc_att_davinci
+│   │           ├── README.md
+│   │           ├── finetune
+│   │           │   ├── finetune.json
+│   │           │   ├── finetune_prepared_train.jsonl
+│   │           │   ├── finetune_prepared_valid.jsonl
+│   │           │   └── results.csv
+│   │           ├── v1
+│   │           │   └── finetune
+│   │           │       ├── finetune.json
+│   │           │       └── finetune_prepared.jsonl
+│   │           └── v2
+│   │               └── finetune
+│   │                   ├── finetune.json
+│   │                   ├── finetune_prepared_train (1).jsonl
+│   │                   ├── finetune_prepared_train.jsonl
+│   │                   ├── finetune_prepared_valid (1).jsonl
+│   │                   └── finetune_prepared_valid.jsonl
+│   ├── env
+│   │   ├── asset
+│   │   │   ├── object
+│   │   │   │   ├── block
+│   │   │   │   │   ├── block.obj
+│   │   │   │   │   └── block.urdf
+│   │   │   │   ├── bowl
+│   │   │   │   │   ├── bowl.urdf
+│   │   │   │   │   ├── cup.obj
+│   │   │   │   │   └── textured-0008192.obj
+│   │   │   │   ├── circle
+│   │   │   │   │   ├── circle.obj
+│   │   │   │   │   └── circle.urdf
+│   │   │   │   ├── mesh_script
+│   │   │   │   │   ├── prep_block.py
+│   │   │   │   │   ├── prep_circle.py
+│   │   │   │   │   ├── prep_mesh.py
+│   │   │   │   │   └── prep_triangle.py
+│   │   │   │   ├── moon
+│   │   │   │   │   ├── moon.obj
+│   │   │   │   │   └── moon.urdf
+│   │   │   │   ├── pentagon
+│   │   │   │   │   ├── pentagon.obj
+│   │   │   │   │   └── pentagon.urdf
+│   │   │   │   ├── star
+│   │   │   │   │   ├── star.obj
+│   │   │   │   │   └── star.urdf
+│   │   │   │   └── triangle
+│   │   │   │       ├── triangle.obj
+│   │   │   │       └── triangle.urdf
+│   │   │   ├── robotiq_2f_85
+│   │   │   │   ├── README.md
+│   │   │   │   ├── robotiq-2f-base.mtl
+│   │   │   │   ├── robotiq-2f-base.obj
+│   │   │   │   ├── robotiq-2f-base.stl
+│   │   │   │   ├── robotiq-2f-coupler.mtl
+│   │   │   │   ├── robotiq-2f-coupler.obj
+│   │   │   │   ├── robotiq-2f-coupler.stl
+│   │   │   │   ├── robotiq-2f-driver.mtl
+│   │   │   │   ├── robotiq-2f-driver.obj
+│   │   │   │   ├── robotiq-2f-driver.stl
+│   │   │   │   ├── robotiq-2f-follower.mtl
+│   │   │   │   ├── robotiq-2f-follower.obj
+│   │   │   │   ├── robotiq-2f-follower.stl
+│   │   │   │   ├── robotiq-2f-pad.stl
+│   │   │   │   ├── robotiq-2f-spring_link.mtl
+│   │   │   │   ├── robotiq-2f-spring_link.obj
+│   │   │   │   ├── robotiq-2f-spring_link.stl
+│   │   │   │   ├── robotiq_2f_85.urdf
+│   │   │   │   └── textures
+│   │   │   │       ├── gripper-2f_BaseColor.jpg
+│   │   │   │       ├── gripper-2f_Metallic.jpg
+│   │   │   │       ├── gripper-2f_Normal.jpg
+│   │   │   │       └── gripper-2f_Roughness.jpg
+│   │   │   ├── suction
+│   │   │   │   ├── base.obj
+│   │   │   │   ├── cylinder.urdf
+│   │   │   │   ├── cylinder_real.urdf
+│   │   │   │   ├── head.obj
+│   │   │   │   ├── mid.obj
+│   │   │   │   ├── suction-base.urdf
+│   │   │   │   ├── suction-head-long.urdf
+│   │   │   │   ├── suction-head.urdf
+│   │   │   │   └── tip.obj
+│   │   │   └── ur5e
+│   │   │       ├── collision
+│   │   │       │   ├── base.stl
+│   │   │       │   ├── forearm.stl
+│   │   │       │   ├── shoulder.stl
+│   │   │       │   ├── upperarm.stl
+│   │   │       │   ├── wrist1.stl
+│   │   │       │   ├── wrist2.stl
+│   │   │       │   └── wrist3.stl
+│   │   │       ├── ur5e.urdf
+│   │   │       └── visual
+│   │   │           ├── base.dae
+│   │   │           ├── forearm.dae
+│   │   │           ├── shoulder.dae
+│   │   │           ├── upperarm.dae
+│   │   │           ├── wrist1.dae
+│   │   │           ├── wrist2.dae
+│   │   │           └── wrist3.dae
+│   │   ├── constant.py
+│   │   ├── detection
+│   │   │   ├── owl.py
+│   │   │   ├── util.py
+│   │   │   ├── vild.py
+│   │   │   └── visualization.py
+│   │   ├── gripper.py
+│   │   ├── pick_place_env.py
+│   │   ├── pybullet_tabletop.py
+│   │   └── test
+│   │       ├── text_features.npz
+│   │       └── tmp.jpg
+│   ├── lang_help.egg-info
+│   │   ├── PKG-INFO
+│   │   ├── SOURCES.txt
+│   │   ├── dependency_links.txt
+│   │   └── top_level.txt
+│   ├── plot
+│   │   ├── compare_help_success_full.py
+│   │   ├── compare_size_coverage_full.py
+│   │   ├── plot_coverage.py
+│   │   ├── plot_coverage_new.py
+│   │   ├── plot_help_success_avg.py
+│   │   ├── plot_help_success_setting.py
+│   │   ├── plot_size_coverage_avg.py
+│   │   └── plot_size_coverage_setting.py
+│   ├── sandbox
+│   │   ├── collect_full.py
+│   │   ├── combine_data.py
+│   │   ├── combine_data_full.py
+│   │   ├── compare_raps_lam.py
+│   │   ├── get_mc_variance.py
+│   │   ├── get_task_list.py
+│   │   ├── mc_human_answer_auto_label.py
+│   │   ├── resample_data.py
+│   │   └── stack
+│   │       ├── Archive
+│   │       │   ├── collect_clarification.py
+│   │       │   ├── collect_mc_pre.py
+│   │       │   └── collect_prompt.py
+│   │       ├── README.md
+│   │       ├── collect_answer.py
+│   │       ├── collect_initial_state.py
+│   │       ├── collect_mc_post.py
+│   │       ├── collect_mc_pre.py
+│   │       └── collect_probe.py
+│   ├── script
+│   │   ├── bimanual
+│   │   │   ├── collect_answer.py
+│   │   │   ├── collect_init_data.py
+│   │   │   ├── collect_init_data_archive.py
+│   │   │   ├── collect_mc_post.py
+│   │   │   └── collect_mc_pre.py
+│   │   ├── check_coverage_distr.py
+│   │   ├── collab
+│   │   │   ├── README.md
+│   │   │   ├── collect_answer.py
+│   │   │   ├── collect_answer_ensemble.py
+│   │   │   ├── collect_init_data.py
+│   │   │   ├── collect_mc_post.py
+│   │   │   ├── collect_mc_post_ensemble.py
+│   │   │   └── collect_mc_pre.py
+│   │   ├── compare_calibration_level.py
+│   │   ├── compare_fail_data.py
+│   │   ├── compare_fail_data_cp.py
+│   │   ├── compare_help_success.py
+│   │   ├── compare_help_success_multi.py
+│   │   ├── compare_size_coverage.py
+│   │   ├── compare_size_coverage_multi.py
+│   │   ├── get_cond_conformal_bound.py
+│   │   ├── plot_calibration_curve.py
+│   │   ├── saycan
+│   │   │   ├── README.md
+│   │   │   ├── collect_answer.py
+│   │   │   ├── collect_answer_perplexity.py
+│   │   │   ├── collect_init_data.py
+│   │   │   ├── collect_mc_post.py
+│   │   │   ├── collect_mc_post_no_probe.py
+│   │   │   ├── collect_mc_post_no_probe_combine.py
+│   │   │   ├── collect_mc_post_no_probe_perplexity.py
+│   │   │   ├── collect_mc_pre.py
+│   │   │   ├── collect_mc_pre_no_probe.py
+│   │   │   ├── prep_real.py
+│   │   │   └── run_eval.py
+│   │   ├── sim
+│   │   │   └── run_tabletop_rearragement.py
+│   │   └── vanilla
+│   │       ├── Archive
+│   │       │   ├── answer_template_data.py
+│   │       │   ├── collect_data.py
+│   │       │   └── collect_data_multi.py
+│   │       ├── README.md
+│   │       ├── collect_answer.py
+│   │       ├── collect_answer_ensemble.py
+│   │       ├── collect_answer_perplexity.py
+│   │       ├── collect_binary_answer.py
+│   │       ├── collect_binary_finetune.py
+│   │       ├── collect_binary_post.py
+│   │       ├── collect_ensemble_example.py
+│   │       ├── collect_init_data.py
+│   │       ├── collect_mc_finetune.py
+│   │       ├── collect_mc_post.py
+│   │       ├── collect_mc_post_ensemble.py
+│   │       ├── collect_mc_post_perplexity.py
+│   │       ├── collect_mc_pre.py
+│   │       ├── collect_set_answer.py
+│   │       └── collect_set_post.py
+│   ├── setup.py
+│   ├── test
+│   │   ├── debug_data.py
+│   │   ├── evaluate_failure.py
+│   │   ├── evaluate_softmax.py
+│   │   ├── test_prompt.py
+│   │   └── test_token.py
+│   └── util
+│       ├── __init__.py
+│       ├── __pycache__
+│       │   └── __init__.cpython-311.pyc
+│       ├── collab.py
+│       ├── data.py
+│       └── vanilla.py
+├── pyproject.toml
+├── scripts_api
+│   ├── run_scene.py
+│   ├── smoke_eval.csv
+│   ├── smoke_test.py
+│   ├── smoke_test_3.py
+│   ├── smoke_test_4.py
+│   ├── smoke_test_old.py
+│   └── smoke_test_old_2.py
+├── smoke_results.csv
+└── src
+    ├── .DS_Store
+    ├── knowdanger
+    │   ├── .DS_Store
+    │   ├── __init__.py
+    │   ├── __init__rg.py
+    │   ├── __pycache__
+    │   │   └── __init__.cpython-311.pyc
+    │   ├── adapters
+    │   │   ├── __pycache__
+    │   │   │   └── roboguard_adapter.cpython-311.pyc
+    │   │   ├── paper_knowno.py
+    │   │   ├── paper_roboguard.py
+    │   │   ├── rg_adapter.py
+    │   │   └── roboguard_adapter.py
+    │   ├── calibration
+    │   │   └── mcqa
+    │   │       ├── README.txt
+    │   │       ├── build_dataset.py
+    │   │       ├── compute_calibration_kd.py
+    │   │       ├── examples_loader_kd.py
+    │   │       ├── kd_calibrate.py
+    │   │       ├── label_dataset.py
+    │   │       ├── query_lm.py
+    │   │       ├── runtime_gate.py
+    │   │       ├── schemas-2.py
+    │   │       ├── score_knowno_like-2.py
+    │   │       └── scorer_knowno.py
+    │   ├── compat_knowno.py
+    │   ├── config.py
+    │   ├── core
+    │   │   ├── __init__.py
+    │   │   ├── __pycache__
+    │   │   │   └── knowdanger_core.cpython-311.pyc
+    │   │   ├── knowdanger_core.py
+    │   │   ├── knowdanger_core_3.py
+    │   │   ├── knowdanger_core_4.py
+    │   │   ├── knowdanger_core_old.py
+    │   │   ├── knowdanger_core_rg.py
+    │   │   ├── knowdanger_rewriting.py
+    │   │   ├── llm_scorer_benchmark.py
+    │   │   ├── runtime_safety.py
+    │   │   └── safety_classifier_training.py
+    │   └── knowno.yaml
+    ├── knowdanger.egg-info
+    │   ├── PKG-INFO
+    │   ├── SOURCES.txt
+    │   ├── dependency_links.txt
+    │   └── top_level.txt
+    ├── known
+    │   ├── __init__.py
+    │   ├── __pycache__
+    │   │   └── __init__.cpython-311.pyc
+    │   └── knowno
+    │       ├── __init__.py
+    │       ├── __pycache__
+    │       │   ├── __init__.cpython-311.pyc
+    │       │   └── api.cpython-311.pyc
+    │       └── api.py
+    ├── lang_help
+    │   ├── __init__.py
+    │   ├── __pycache__
+    │   │   └── __init__.cpython-311.pyc
+    │   └── knowno
+    │       ├── __init__.py
+    │       ├── __pycache__
+    │       │   ├── __init__.cpython-311.pyc
+    │       │   └── api.cpython-311.pyc
+    │       └── api.py
+    ├── scenes
+    │   ├── __pycache__
+    │   │   ├── example1_hazard_lab.cpython-311.pyc
+    │   │   ├── example2_breakroom.cpython-311.pyc
+    │   │   └── example3_photonics.cpython-311.pyc
+    │   ├── example1_hazard_lab.py
+    │   ├── example2_breakroom.py
+    │   ├── example3_photonics.py
+    │   ├── results_logger.py
+    │   └── uncalibrated_runner.py
+    ├── scripts
+    │   ├── calibration_knowno
+    │   │   ├── calibrate_knowno.py
+    │   │   ├── compute_calibration.py
+    │   │   ├── examples_loader.py
+    │   │   ├── examples_template.py
+    │   │   ├── get_cond_conformal_bound.py
+    │   │   ├── label_cli.py
+    │   │   ├── runtime.py
+    │   │   ├── sandbox
+    │   │   │   ├── collect_full.py
+    │   │   │   ├── combine_data.py
+    │   │   │   ├── combine_data_full.py
+    │   │   │   ├── compare_raps_lam.py
+    │   │   │   ├── get_mc_variance.py
+    │   │   │   ├── get_task_list.py
+    │   │   │   ├── mc_human_answer_auto_label.py
+    │   │   │   ├── resample_data.py
+    │   │   │   └── stack
+    │   │   │       ├── Archive
+    │   │   │       │   ├── collect_clarification.py
+    │   │   │       │   ├── collect_mc_pre.py
+    │   │   │       │   └── collect_prompt.py
+    │   │   │       ├── README.md
+    │   │   │       ├── collect_answer.py
+    │   │   │       ├── collect_initial_state.py
+    │   │   │       ├── collect_mc_post.py
+    │   │   │       ├── collect_mc_pre.py
+    │   │   │       └── collect_probe.py
+    │   │   ├── schemas.py
+    │   │   └── score_stub.py
+    │   ├── run_scene.py
+    │   └── sanity_check_knowno.py
+    └── tests
+        ├── .DS_Store
+        ├── __pycache__
+        │   ├── benchmark_knowno_roboguard.cpython-311.pyc
+        │   ├── benchmark_report.cpython-311.pyc
+        │   ├── benchmark_true_baselines.cpython-311.pyc
+        │   └── roboguard_paper_bench.cpython-311.pyc
+        ├── batch_run_roboguard_behaviors.py
+        ├── batch_run_roboguard_eval.py
+        ├── benchmark_knowno_roboguard.py
+        ├── benchmark_report.py
+        ├── benchmark_true_baselines.py
+        ├── demo_spot_roboguard.py
+        ├── knowdanger_vs_baselines.py
+        ├── logprob_gaps.csv
+        ├── logs
+        │   ├── .DS_Store
+        │   ├── bench_20250922_171818
+        │   │   ├── plan_summary.csv
+        │   │   ├── report.md
+        │   │   ├── step_log.csv
+        │   │   └── summary.json
+        │   ├── bench_20250922_173510
+        │   │   ├── plan_summary.csv
+        │   │   ├── report.md
+        │   │   ├── step_log.csv
+        │   │   └── summary.json
+        │   ├── bench_strict
+        │   │   ├── plan_summary.csv
+        │   │   ├── report.md
+        │   │   ├── step_log.csv
+        │   │   └── summary.json
+        │   └── true_bench
+        ├── plot_logprobs.py
+        ├── roboguard_paper_bench.py
+        ├── roboguard_test_prompts.py
+        ├── run_all.sh
+        ├── spot-planning-demo
+        │   ├── .DS_Store
+        │   ├── .github
+        │   │   └── workflows
+        │   │       └── ci.yml
+        │   ├── .gitignore
+        │   ├── .pylintrc
+        │   ├── LICENSE
+        │   ├── README.md
+        │   ├── README_SPOT_DEMO.md
+        │   ├── README_SPOT_HARDCODED.md
+        │   ├── capture_spot_dataset.py
+        │   ├── demo_spot_hardcoded.py
+        │   ├── demo_spot_hardcoded_integrated.py
+        │   ├── graph_nav_maps
+        │   │   └── prpl_fwing_test_map
+        │   │       ├── edge_snapshots
+        │   │       │   ├── edge_snapshot_id_barky-duck-Qlyyn6obgc0VxDmDouRAgw==
+        │   │       │   ├── edge_snapshot_id_bossy-lamb-IhbPkm2mqcmt6RF4GeufIQ==
+        │   │       │   ├── edge_snapshot_id_chubby-mayfly-W5jp9YcNPKnCjhBcxd1MMw==
+        │   │       │   ├── edge_snapshot_id_crispy-walrus-0lZohXM+3MkSuxnETGS4.A==
+        │   │       │   ├── edge_snapshot_id_inlaid-grub-dM2YHE6tokm1rhyeuTGH6A==
+        │   │       │   ├── edge_snapshot_id_jailed-wasp-SO5ia0pMfA5fhe9EPJ+jEg==
+        │   │       │   ├── edge_snapshot_id_kookie-nasua-uRJzMTkB235VK1MzDhJdwQ==
+        │   │       │   ├── edge_snapshot_id_legged-thrush-0Id9zGrrMT6rJfNapVFk8A==
+        │   │       │   ├── edge_snapshot_id_rainy-heron-VELf2vVC8cV0sIjX.CjHqQ==
+        │   │       │   ├── edge_snapshot_id_scarey-taipan-IJY4u.tFtcdq+XCY2eeMHg==
+        │   │       │   └── edge_snapshot_id_tacit-cattle-cX.wQthYYL0uWcX.R34KCw==
+        │   │       ├── graph
+        │   │       └── waypoint_snapshots
+        │   │           ├── snapshot_anti-cur-q9rEIIuf92HAD930WLnPTQ==
+        │   │           ├── snapshot_botchy-cobra-JfYaf1BdsGYOmj4MIB5.KQ==
+        │   │           ├── snapshot_cymose-drum-SHrnRkofpohqToBrfyV+Ww==
+        │   │           ├── snapshot_daft-mite-h30NXu7nwEG.L9chAen5Kg==
+        │   │           ├── snapshot_finer-monkey-6N59Kzb9Y9VqsboZ+5Q1IA==
+        │   │           ├── snapshot_mass-chimp-2ePJdqNcCrncWEy89YNhZw==
+        │   │           ├── snapshot_monied-manx-7++r4o6rUdtFwVosj8N2kg==
+        │   │           ├── snapshot_peanut-fowl-u3PTomRtAgnOkS9GSHrrYw==
+        │   │           ├── snapshot_runny-merino-BY6S7U+xzAxkDV1K.+IrhQ==
+        │   │           ├── snapshot_squab-crow-xPsA5qtn8Tumaf.FMwdenw==
+        │   │           └── snapshot_vestal-kudu-WoIh3NzWglIL6zB+yQcZNg==
+        │   ├── pyproject.toml
+        │   ├── run_autoformat.sh
+        │   ├── run_ci_checks.sh
+        │   ├── scripts
+        │   │   ├── close_gripper.py
+        │   │   ├── open_gripper.py
+        │   │   └── stow_arm.py
+        │   ├── spot_detect_utils.py
+        │   ├── src
+        │   │   ├── .DS_Store
+        │   │   └── spot_planning_demo
+        │   │       ├── .DS_Store
+        │   │       ├── __init__.py
+        │   │       ├── envs
+        │   │       │   ├── spot_pybullet_env.py
+        │   │       │   ├── spot_real_env.py
+        │   │       │   └── spot_sim_viz_wrapper.py
+        │   │       ├── py.typed
+        │   │       ├── spot_utils
+        │   │       │   ├── __init__.py
+        │   │       │   ├── perception
+        │   │       │   │   ├── perception_structs.py
+        │   │       │   │   └── spot_cameras.py
+        │   │       │   ├── skills
+        │   │       │   │   ├── spot_grasp.py
+        │   │       │   │   ├── spot_hand_move.py
+        │   │       │   │   └── spot_navigation.py
+        │   │       │   ├── spot_localization.py
+        │   │       │   └── utils.py
+        │   │       └── structs.py
+        │   └── tests
+        │       ├── .DS_Store
+        │       ├── conftest.py
+        │       └── envs
+        │           └── test_spot_real_env.py
+        ├── summarize_roboguard_behavior_results.py
+        ├── summarize_roboguard_results.py
+        └── visualize_scorer_comparison.py
