@@ -1,0 +1,1 @@
+{"prompt": "Task: move object to storage\nScene: warehouse with shelves and restricted area\nWhat is the correct action and why?", "completion": "Correct Action: place_on_shelf_a\nReasoning: Shelf A is accessible and not in restricted zone. It has sufficient space and is stable for the object."}

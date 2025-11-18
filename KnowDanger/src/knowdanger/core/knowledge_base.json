@@ -1,0 +1,18 @@
+[
+  {
+    "task": "move object to storage",
+    "scene": "warehouse with shelves and restricted area",
+    "correct_option": "place_on_shelf_a",
+    "reasoning": "Shelf A is accessible and not in restricted zone. It has sufficient space and is stable for the object.",
+    "safety": [
+      "not_in_restricted_zone",
+      "stable_surface",
+      "accessible"
+    ],
+    "meta": {
+      "source": "human_expert",
+      "confidence": "high"
+    },
+    "timestamp": "2025-11-17T19:35:21.430602"
+  }
+]
