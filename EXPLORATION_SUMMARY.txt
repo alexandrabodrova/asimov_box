@@ -1,0 +1,406 @@
+================================================================================
+                   ASIMOV BOX CODEBASE EXPLORATION SUMMARY
+================================================================================
+
+EXPLORATION CONDUCTED: 2025-11-18
+REPOSITORY: https://github.com/alexandrabodrova/asimov_box
+
+================================================================================
+DOCUMENTS GENERATED
+================================================================================
+
+1. CODEBASE_ANALYSIS.md (this directory)
+   - Comprehensive analysis of all three systems
+   - File locations and implementations
+   - Data structures and interfaces
+   - Integration points and current status
+   - Configuration options and usage examples
+
+2. ARCHITECTURE_OVERVIEW.md (this directory)
+   - Visual architecture diagrams (ASCII)
+   - Component details and data flows
+   - Integration layers
+   - Knowledge base structure
+   - Error handling and fallbacks
+
+3. EXPLORATION_SUMMARY.txt (this file)
+   - Quick reference guide
+   - Key findings
+   - Navigation guide
+
+================================================================================
+THREE SAFETY SYSTEMS OVERVIEW
+================================================================================
+
+SYSTEM 1: RoboGuard (Rule-Based Safety)
+  Purpose: Check if actions violate explicitly defined safety rules
+  Input:   Temporal logic rules + scene graph + action parameters
+  Output:  SAFE | UNSAFE (binary)
+  Method:  Temporal logic verification
+  Files:   RoboGuard/src/roboguard/
+           src/knowdanger/adapters/roboguard_adapter.py
+  Status:  Fully integrated (first check in pipeline)
+
+SYSTEM 2: KnowNo (Uncertainty Quantification)
+  Purpose: Quantify confidence in LLM predictions
+  Input:   LLM scores/logits + calibration data
+  Output:  SAFE | UNCERTAIN (confidence-based)
+  Method:  Conformal prediction
+  Files:   src/lang_help/knowno/api.py
+           src/knowdanger/adapters/paper_knowno.py
+           src/scripts/calibration_knowno/
+  Status:  Fully integrated (second check in pipeline)
+
+SYSTEM 3: IntrospectivePlan (Reasoning-Based Safety)
+  Purpose: Generate introspective reasoning for safety decisions
+  Input:   Task description + scene + candidates + knowledge base
+  Output:  SAFE | UNSAFE | UNCERTAIN (with explanations)
+  Method:  LLM introspection + KB retrieval + conformal prediction
+  Files:   IntroPlan/ (notebooks + Python utilities)
+           src/knowdanger/adapters/introplan_adapter.py
+  Status:  Fully integrated (third check in pipeline)
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+1. COMPLETE INTEGRATION ACHIEVED
+   - All three systems are fully integrated in knowdanger_enhanced.py
+   - Backward compatible with existing knowdanger_core.py
+   - Can run two-system (RG+KN) or three-system (RG+KN+IP) mode
+
+2. MODULAR ARCHITECTURE
+   - Each system has its own adapter (roboguard_adapter.py, etc.)
+   - Clear separation of concerns
+   - Easy to extend or replace individual systems
+
+3. FLEXIBLE AGGREGATION
+   Three verdict combination strategies:
+   - Conservative (default): ANY UNSAFE → UNSAFE
+   - Majority: Democratic voting
+   - Weighted: Confidence-weighted combination
+
+4. COMPREHENSIVE TOOLING
+   - Format converters between systems
+   - Calibration helpers for KnowNo
+   - Metrics collection and reporting
+   - Knowledge base management
+   - Extensive logging
+
+5. WELL-DOCUMENTED
+   - Implementation summaries (IMPLEMENTATION_SUMMARY.md)
+   - Integration guide (INTEGRATION_GUIDE.md)
+   - Migration guide (MIGRATION_GUIDE.md)
+   - 6 working examples (example_usage.py)
+   - Architecture diagrams
+
+================================================================================
+DIRECTORY STRUCTURE (KEY COMPONENTS)
+================================================================================
+
+KnowDanger/
+├── RoboGuard/
+│   └── src/roboguard/           # Rule-based safety verification
+├── IntroPlan/
+│   ├── *.ipynb                  # Jupyter notebooks (7 variants)
+│   ├── llm.py                   # LLM API calls
+│   ├── utils.py                 # Utilities
+│   ├── cp_utils.py              # Conformal prediction
+│   ├── metrics.py               # Metrics
+│   └── data/                    # Knowledge base files
+├── SPINE/                        # Separate mapping/navigation system
+└── src/
+    ├── knowdanger/
+    │   ├── core/
+    │   │   ├── knowdanger_core.py           # Original (RG+KN)
+    │   │   ├── knowdanger_enhanced.py       # Enhanced (RG+KN+IP)
+    │   │   ├── integration_utils.py         # Utilities
+    │   │   └── example_usage.py             # 6 examples
+    │   ├── adapters/
+    │   │   ├── roboguard_adapter.py        # RoboGuard bridge
+    │   │   ├── introplan_adapter.py        # IntroPlan bridge
+    │   │   ├── paper_knowno.py             # KnowNo bridge
+    │   │   └── paper_roboguard.py
+    │   ├── calibration/                    # KnowNo calibration
+    │   ├── IMPLEMENTATION_SUMMARY.md
+    │   ├── INTEGRATION_GUIDE.md
+    │   └── MIGRATION_GUIDE.md
+    ├── lang_help/knowno/
+    │   └── api.py                          # KnowNo API
+    ├── scenes/
+    │   ├── example1_hazard_lab.py          # Lab with chemical hazards
+    │   ├── example2_breakroom.py           # Breakroom navigation
+    │   └── example3_photonics.py           # Photonics equipment
+    └── tests/
+        ├── benchmark_knowno_roboguard.py   # Main benchmark
+        ├── example_usage.py
+        └── logs/                           # Test results
+
+================================================================================
+MAIN ENTRY POINTS & INTERFACES
+================================================================================
+
+BASIC USAGE (Two Systems - RG + KN):
+  from knowdanger.core.knowdanger_core import KnowDanger, Config
+  kd = KnowDanger(Config(alpha=0.1))
+  assessment = kd.run(scene, plan)
+
+ADVANCED USAGE (Three Systems - RG + KN + IP):
+  from knowdanger.core.knowdanger_enhanced import EnhancedKnowDanger, Config
+  config = Config(alpha=0.1, use_introspection=True, 
+                  introplan_kb_path="kb.json")
+  kd = EnhancedKnowDanger(config)
+  assessment = kd.run(scene, plan)
+  
+  # With iterative refinement
+  assessment = kd.run_with_rewriting(scene, plan, max_iterations=3)
+
+SYSTEM-SPECIFIC EXTENSIONS:
+  - RoboGuardAdapter: roboguard_adapter.py (fit, evaluate_step)
+  - KnowNoAdapter: paper_knowno.py (calibrate, predict_set)
+  - IntroPlanAdapter: introplan_adapter.py (generate reasoning, retrieve KB)
+
+================================================================================
+CURRENT INTEGRATION STATUS
+================================================================================
+
+WHAT'S WORKING:
+✓ RoboGuard + KnowNo integration (original system)
+✓ Full three-way RoboGuard + KnowNo + IntroPlan integration (new)
+✓ Aggregation strategies (conservative, majority, weighted)
+✓ Iterative plan refinement with introspection
+✓ Knowledge base loading/retrieval/construction
+✓ Format conversion between systems
+✓ Calibration support for KnowNo
+✓ Comprehensive logging and metrics
+
+SYSTEM-SPECIFIC NOTES:
+- RoboGuard: Dynamically imports upstream roboguard module
+- KnowNo: Requires calibration data; uses conformal prediction
+- IntroPlan: Requires OpenAI API key; builds KB from experience
+
+================================================================================
+DATA STRUCTURES (ALL SYSTEMS USE COMMON TYPES)
+================================================================================
+
+Step:
+  action: str                              # "pick", "place", etc.
+  params: Dict[str, Any]                  # {"object": "x", ...}
+  candidates: List[Tuple[str, float]]     # [("action1", 0.8), ...]
+  meta: Dict[str, Any]                    # Extra metadata
+
+Scene:
+  name: str
+  semantic_graph: Dict[str, Any]          # Objects, locations, properties
+  rules: List[str]                        # Safety rules
+  env_params: Dict[str, Any]              # Environment parameters
+  helpers: Dict[str, Callable]            # Helper functions
+
+PlanCandidate:
+  name: str
+  steps: List[Step]
+  user_prompt: str
+  meta: Dict[str, Any]
+
+Verdict:
+  label: str                              # "SAFE" | "UNSAFE" | "UNCERTAIN"
+  why: str                                # Explanation
+  details: Dict[str, Any]                 # System-specific details
+
+Assessment:
+  PlanAssessment:
+    plan: PlanCandidate
+    steps: List[StepAssessment]           # Per-step assessments
+      - roboguard: Verdict
+      - knowno: Verdict
+      - introplan: Verdict
+      - final: Verdict (aggregated)
+    overall: Verdict
+
+================================================================================
+CONFIGURATION REFERENCE
+================================================================================
+
+Key Configuration Parameters:
+
+  alpha: float = 0.1
+    Confidence level for conformal prediction (higher = more confident)
+    
+  ask_threshold_confidence: float = 0.7
+    Threshold for asking human help vs. proceeding with uncertainty
+    
+  use_introspection: bool = True
+    Whether to enable IntroPlan (third system)
+    
+  introplan_kb_path: Optional[str] = None
+    Path to IntroPlan knowledge base file (JSON or TXT)
+    
+  introplan_retrieval_k: int = 3
+    Number of similar examples to retrieve from KB
+    
+  aggregation_strategy: str = "conservative"
+    How to combine verdicts: "conservative" | "majority" | "weighted"
+
+================================================================================
+TESTING & EXAMPLES
+================================================================================
+
+EXAMPLE SCENES:
+- example1_hazard_lab.py: Chemical hazards, spatial/temporal rules
+- example2_breakroom.py: Breakroom safety
+- example3_photonics.py: Photonics equipment safety
+
+EXAMPLE USAGE:
+- example_usage.py: 6 working examples with different configurations
+
+BENCHMARKS:
+- benchmark_knowno_roboguard.py: Compare all systems
+- benchmark_true_baselines.py: Baseline comparisons
+- roboguard_paper_bench.py: Paper benchmarks
+
+RUNNING TESTS:
+  python -m pytest src/tests/
+  python src/knowdanger/core/example_usage.py
+  python src/tests/benchmark_knowno_roboguard.py
+
+================================================================================
+QUICK START GUIDE
+================================================================================
+
+1. INSTALL:
+   git clone https://github.com/alexandrabodrova/asimov_box
+   cd asimov_box/KnowDanger
+   conda env create -f environment.yml
+   conda activate knowdanger_venv-311
+   pip install -e .
+
+2. BASIC USAGE:
+   from knowdanger.core.knowdanger_enhanced import EnhancedKnowDanger, Config
+   config = Config(alpha=0.1, use_introspection=True)
+   kd = EnhancedKnowDanger(config)
+   assessment = kd.run(scene, plan)
+
+3. EXTEND:
+   - Add more safety rules
+   - Calibrate KnowNo with your data
+   - Build IntroPlan knowledge base for your domain
+   - Adjust aggregation strategy
+
+4. DEPLOY:
+   - Evaluate with MetricsCollector
+   - Monitor with LoggingHelper
+   - Deploy with API wrapper
+   - Collect feedback for KB improvement
+
+================================================================================
+KEY METRICS TO TRACK
+================================================================================
+
+From MetricsCollector:
+- success_rate: % of SAFE verdicts
+- help_rate: % of UNCERTAIN verdicts (ask-for-help)
+- safety_violation_rate: % of UNSAFE verdicts
+- roboguard_blocks: count of UNSAFE from RoboGuard
+- knowno_uncertainties: count of UNCERTAIN from KnowNo
+- introplan_clarifications: count of UNCERTAIN from IntroPlan
+
+Per-System Coverage:
+- How often each system provides verdicts
+- Agreement/disagreement between systems
+- False positive/negative rates (if labeled data available)
+
+================================================================================
+DOCUMENTATION FILES
+================================================================================
+
+IN REPOSITORY:
+- CODEBASE_ANALYSIS.md (generated)     # Comprehensive analysis
+- ARCHITECTURE_OVERVIEW.md (generated) # Architecture diagrams
+- README.md                            # Project overview
+- src/knowdanger/IMPLEMENTATION_SUMMARY.md
+- src/knowdanger/INTEGRATION_GUIDE.md (15 KB, very detailed)
+- src/knowdanger/MIGRATION_GUIDE.md
+- IntroPlan/README.md
+- RoboGuard/README.md
+
+EXTERNAL:
+- RoboGuard Paper: https://robopair.org
+- KnowNo Paper: Google Research language_model_uncertainty
+- IntroPlan Paper: https://introplan.github.io (NeurIPS 2024)
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+ModuleNotFoundError: No module named 'roboguard'
+  → Add RoboGuard to Python path or install via setup.py
+
+IntroPlan knowledge base not found
+  → Use absolute path for KB files
+  → Check KB format (JSON or TXT)
+
+Calibration not converging
+  → Ensure 100+ calibration examples
+  → Check data quality
+
+LLM API errors
+  → Set OPENAI_API_KEY environment variable
+  → Check API rate limits and quotas
+
+================================================================================
+RECOMMENDED NEXT STEPS
+================================================================================
+
+1. UNDERSTAND THE SYSTEM
+   - Read CODEBASE_ANALYSIS.md (comprehensive)
+   - Review ARCHITECTURE_OVERVIEW.md (diagrams)
+   - Run example_usage.py (working examples)
+
+2. RUN LOCALLY
+   - Install environment
+   - Run benchmarks on example scenes
+   - Modify example scenes for your use case
+
+3. CUSTOMIZE FOR YOUR DOMAIN
+   - Define safety rules for your domain
+   - Create example scenarios
+   - Calibrate KnowNo with your data
+   - Build IntroPlan KB from examples
+
+4. EVALUATE PERFORMANCE
+   - Use MetricsCollector for tracking
+   - Analyze per-system verdicts
+   - Measure agreement between systems
+   - Iterate on configuration
+
+5. DEPLOY
+   - Wrap in API endpoint
+   - Monitor latency and accuracy
+   - Collect feedback
+   - Continuously improve KB
+
+================================================================================
+CONTACT & CITATION
+================================================================================
+
+Repository: https://github.com/alexandrabodrova/asimov_box
+Author: Alexandra Bodrova (Princeton University)
+Year: 2025
+
+Citation:
+@phdthesis{bodrova2024asimovbox,
+  title={Asimov Box: Robust Safety Verification for LLM-Controlled Robots},
+  author={Bodrova, Alexandra},
+  year={2025},
+  school={Princeton University}
+}
+
+================================================================================
+END OF EXPLORATION SUMMARY
+================================================================================
+
+For detailed information, see:
+- CODEBASE_ANALYSIS.md (file locations, components, interfaces)
+- ARCHITECTURE_OVERVIEW.md (diagrams, data flows, integration)
+- README.md (quick start, features, usage)
+
