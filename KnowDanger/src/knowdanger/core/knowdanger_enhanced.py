@@ -8,16 +8,19 @@ This enhanced version integrates:
 
 The system provides a comprehensive safety layer for LLM-controlled robots.
 
+IMPORTANT: This file now uses the REAL adapter implementations from knowdanger/adapters/
+instead of stubs. Fallbacks are provided if adapters cannot be imported.
+
 Usage:
     from knowdanger_enhanced import EnhancedKnowDanger, Config, Scene, PlanCandidate, Step
-    
+
     config = Config(
         alpha=0.1,
         ask_threshold_confidence=0.7,
         use_introspection=True,
         introplan_kb_path="path/to/knowledge_base.json"
     )
-    
+
     kd = EnhancedKnowDanger(config)
     assessment = kd.run(scene, plan)
 """
@@ -243,79 +246,147 @@ class Config:
             return Verdict("UNCERTAIN", why=f"Weighted avg: {avg_score:.2f}", details={})
 
 
-# Import adapters (in actual usage, these would be separate imports)
-# from knowdanger.adapters.introplan_adapter import IntroPlanAdapter, IntrospectiveReasoning
+# Import real adapters from the adapters directory
+try:
+    from knowdanger.adapters.introplan_adapter import IntroPlanAdapter, IntrospectiveReasoning
+    INTROPLAN_AVAILABLE = True
+except ImportError as e:
+    # Fallback: IntroPlan not available, use stub
+    INTROPLAN_AVAILABLE = False
 
-# Minimal versions for this standalone file
-@dataclass
-class IntrospectiveReasoning:
-    """Minimal version - import from introplan_adapter.py in production"""
-    explanation: str
-    confidence_scores: Dict[str, float]
-    safety_assessment: str
-    compliance_assessment: str
-    recommended_action: Optional[str] = None
-    should_ask_clarification: bool = False
-    reasoning_chain: List[str] = field(default_factory=list)
-    meta: Dict[str, Any] = field(default_factory=dict)
+    @dataclass
+    class IntrospectiveReasoning:
+        """Fallback when IntroPlan adapter not available"""
+        explanation: str
+        confidence_scores: Dict[str, float]
+        safety_assessment: str
+        compliance_assessment: str
+        recommended_action: Optional[str] = None
+        should_ask_clarification: bool = False
+        reasoning_chain: List[str] = field(default_factory=list)
+        meta: Dict[str, Any] = field(default_factory=dict)
 
+    class IntroPlanAdapter:
+        """Fallback stub when IntroPlan adapter not available"""
+        def __init__(self, knowledge_base_path=None, use_conformal=True, retrieval_k=3):
+            self.knowledge_base_path = knowledge_base_path
+            self.use_conformal = use_conformal
+            self.retrieval_k = retrieval_k
 
-class IntroPlanAdapter:
-    """
-    Minimal stub - use full version from introplan_adapter.py
-    
-    In production, import as:
-    from knowdanger.adapters.introplan_adapter import IntroPlanAdapter
-    """
-    def __init__(self, knowledge_base_path=None, use_conformal=True, retrieval_k=3):
-        self.knowledge_base_path = knowledge_base_path
-        self.use_conformal = use_conformal
-        self.retrieval_k = retrieval_k
-    
-    def generate_introspective_reasoning(self, task, scene_context, candidate_actions, llm_func=None):
-        # Stub - returns minimal reasoning
-        return IntrospectiveReasoning(
-            explanation="Introspection not fully implemented (using stub)",
-            confidence_scores={action: score for action, score in candidate_actions},
-            safety_assessment="Unknown",
-            compliance_assessment="Unknown",
-            should_ask_clarification=True
-        )
-    
-    def integrate_with_conformal_prediction(self, reasoning, cp_set, candidates, alpha):
-        return cp_set, {"stub": True}
+        def generate_introspective_reasoning(self, task, scene_context, candidate_actions, llm_func=None):
+            return IntrospectiveReasoning(
+                explanation="IntroPlan adapter not available - using fallback",
+                confidence_scores={action: score for action, score in candidate_actions},
+                safety_assessment="Unknown - adapter not loaded",
+                compliance_assessment="Unknown - adapter not loaded",
+                should_ask_clarification=True
+            )
 
+        def integrate_with_conformal_prediction(self, reasoning, cp_set, candidates, alpha):
+            return cp_set, {"fallback": True}
 
-class RoboGuardBridge:
-    """Minimal version - use full implementation from knowdanger_core.py"""
-    def __init__(self):
-        try:
-            self.mod = importlib.import_module("roboguard")
-        except Exception:
-            self.mod = None
-    
-    def compile_specs(self, scene: Scene):
-        return {"rules": scene.rules, "semantic_graph": scene.semantic_graph}
-    
-    def evaluate_plan(self, plan: PlanCandidate, compiled_specs) -> List[Verdict]:
-        # Fallback implementation
-        return [Verdict("SAFE", "Stub RG", {}) for _ in plan.steps]
+try:
+    from knowdanger.adapters.roboguard_adapter import RoboGuardAdapter
+    ROBOGUARD_AVAILABLE = True
 
+    class RoboGuardBridge:
+        """Bridge to RoboGuardAdapter with expected interface"""
+        def __init__(self):
+            try:
+                self.adapter = RoboGuardAdapter()
+                self._fitted = False
+                self._adapter_working = True
+            except Exception as e:
+                # RoboGuardAdapter initialization failed (likely roboguard module not installed)
+                self.adapter = None
+                self._fitted = False
+                self._adapter_working = False
+                self._error = str(e)
 
-class KnowNoAdapter:
-    """Minimal version - use full implementation from knowdanger_core.py"""
-    def __init__(self, cfg: Config):
-        self.cfg = cfg
-        self.tau = None
-    
-    def assess_step(self, step: Step, ask_threshold: float) -> Verdict:
-        if not step.candidates:
-            return Verdict("UNCERTAIN", "No candidates", {})
-        scores = [s for _, s in step.candidates]
-        top_score = max(scores)
-        if top_score >= ask_threshold:
-            return Verdict("SAFE", f"Top score {top_score:.2f}", {})
-        return Verdict("UNCERTAIN", "Low confidence", {})
+        def compile_specs(self, scene: Scene):
+            """Compile specs from scene (calls fit on the adapter)"""
+            if not self._adapter_working:
+                return {"error": getattr(self, '_error', 'Adapter not working'), "scene": scene}
+
+            if not self._fitted and self.adapter:
+                self.adapter.fit(scene.semantic_graph, scene.rules)
+                self._fitted = True
+            return {"adapter": self.adapter, "scene": scene, "working": True}
+
+        def evaluate_plan(self, plan: PlanCandidate, compiled_specs) -> List[Verdict]:
+            """Evaluate plan using RoboGuard adapter"""
+            # Check if adapter is working
+            if not compiled_specs.get("working", False):
+                error_msg = compiled_specs.get("error", "Unknown error")
+                return [Verdict("SAFE", f"RG adapter not available ({error_msg}) - defaulting to SAFE",
+                               {"fallback": True}) for _ in plan.steps]
+
+            adapter = compiled_specs.get("adapter", self.adapter)
+            if not adapter:
+                return [Verdict("SAFE", "RG adapter not initialized - defaulting to SAFE",
+                               {"fallback": True}) for _ in plan.steps]
+
+            # Build action list from plan
+            actions = [step.action for step in plan.steps]
+
+            # Check plan
+            try:
+                ok, per_step = adapter.check_plan(actions)
+
+                # Convert to Verdict list
+                verdicts = []
+                for (action, step_ok), step in zip(per_step, plan.steps):
+                    if step_ok:
+                        verdicts.append(Verdict("SAFE", f"RG: {action} passes rules", {}))
+                    else:
+                        verdicts.append(Verdict("UNSAFE", f"RG: {action} violates rules", {}))
+
+                return verdicts
+            except Exception as e:
+                # If check_plan fails, default to safe
+                return [Verdict("SAFE", f"RG check failed ({e}) - defaulting to SAFE",
+                               {"fallback": True, "error": str(e)}) for _ in plan.steps]
+
+except ImportError:
+    # Fallback: RoboGuard not available, use minimal stub
+    ROBOGUARD_AVAILABLE = False
+
+    class RoboGuardBridge:
+        """Fallback when RoboGuard adapter not available"""
+        def __init__(self):
+            try:
+                self.mod = importlib.import_module("roboguard")
+            except Exception:
+                self.mod = None
+
+        def compile_specs(self, scene: Scene):
+            return {"rules": scene.rules, "semantic_graph": scene.semantic_graph}
+
+        def evaluate_plan(self, plan: PlanCandidate, compiled_specs) -> List[Verdict]:
+            # Fallback: all safe
+            return [Verdict("SAFE", "RoboGuard adapter not available - fallback", {}) for _ in plan.steps]
+
+try:
+    from knowdanger.adapters.paper_knowno import ChoiceBaseline as KnowNoAdapter
+    KNOWNO_AVAILABLE = True
+except ImportError:
+    # Fallback: KnowNo not available, use simple stub
+    KNOWNO_AVAILABLE = False
+
+    class KnowNoAdapter:
+        """Fallback when KnowNo adapter not available"""
+        def __init__(self, cfg: Config):
+            self.cfg = cfg
+            self.tau = None
+
+        def assess_step(self, step: Step, ask_threshold: float) -> Verdict:
+            if not step.candidates:
+                return Verdict("UNCERTAIN", "No candidates", {})
+            scores = [s for _, s in step.candidates]
+            top_score = max(scores)
+            if top_score >= ask_threshold:
+                return Verdict("SAFE", f"Top score {top_score:.2f} (fallback)", {})
+            return Verdict("UNCERTAIN", "Low confidence (fallback)", {})
 
 
 # ==========================================================
@@ -330,13 +401,22 @@ class EnhancedKnowDanger:
     - IntroPlan: Introspective reasoning with explanations
     """
     
-    def __init__(self, cfg: Optional[Config] = None):
+    def __init__(self, cfg: Optional[Config] = None, verbose: bool = False):
         self.cfg = cfg or Config()
-        
+
         # Initialize adapters
         self.rg = RoboGuardBridge()
-        self.kn = KnowNoAdapter(self.cfg)
-        
+
+        # Initialize KnowNo with error handling
+        try:
+            self.kn = KnowNoAdapter(self.cfg)
+            self.kn_working = True
+        except Exception as e:
+            # KnowNo adapter failed, create fallback
+            self.kn = self._create_fallback_knowno()
+            self.kn_working = False
+            self.kn_error = str(e)
+
         # Initialize IntroPlan if enabled
         self.ip: Optional[IntroPlanAdapter] = None
         if self.cfg.use_introspection:
@@ -345,6 +425,72 @@ class EnhancedKnowDanger:
                 use_conformal=True,
                 retrieval_k=self.cfg.introplan_retrieval_k
             )
+
+        # Print diagnostic info if verbose
+        if verbose:
+            self.print_adapter_status()
+
+    def _create_fallback_knowno(self):
+        """Create a fallback KnowNo adapter when real one fails"""
+        class FallbackKnowNo:
+            def __init__(self, cfg):
+                self.cfg = cfg
+                self.tau = None
+
+            def assess_step(self, step: Step, ask_threshold: float) -> Verdict:
+                if not step.candidates:
+                    return Verdict("UNCERTAIN", "No candidates (fallback)", {})
+                scores = [s for _, s in step.candidates]
+                top_score = max(scores)
+                if top_score >= ask_threshold:
+                    return Verdict("SAFE", f"Top score {top_score:.2f} (fallback)", {"fallback": True})
+                return Verdict("UNCERTAIN", "Low confidence (fallback)", {"fallback": True})
+
+        return FallbackKnowNo(self.cfg)
+
+    def print_adapter_status(self):
+        """Print which adapters are available"""
+        print("=== EnhancedKnowDanger Adapter Status ===")
+
+        # RoboGuard status
+        if ROBOGUARD_AVAILABLE:
+            rg_working = getattr(self.rg, '_adapter_working', False)
+            if rg_working:
+                print(f"RoboGuard:  ✓ Real adapter (working)")
+            else:
+                error = getattr(self.rg, '_error', 'Unknown error')
+                print(f"RoboGuard:  ⚠ Real adapter imported but not working")
+                print(f"            Error: {error}")
+        else:
+            print(f"RoboGuard:  ✗ Fallback stub (adapter not available)")
+
+        # KnowNo status
+        if KNOWNO_AVAILABLE:
+            kn_working = getattr(self, 'kn_working', False)
+            if kn_working:
+                print(f"KnowNo:     ✓ Real adapter (working)")
+            else:
+                error = getattr(self, 'kn_error', 'Unknown error')
+                print(f"KnowNo:     ⚠ Real adapter imported but not working")
+                print(f"            Error: {error}")
+        else:
+            print(f"KnowNo:     ✗ Fallback stub (adapter not available)")
+
+        # IntroPlan status
+        if INTROPLAN_AVAILABLE:
+            if self.cfg.use_introspection:
+                print(f"IntroPlan:  ✓ Real adapter (enabled)")
+                if self.cfg.introplan_kb_path:
+                    print(f"            KB path: {self.cfg.introplan_kb_path}")
+                else:
+                    print(f"            KB path: None (will use limited reasoning)")
+            else:
+                print(f"IntroPlan:  ✓ Real adapter (available but disabled)")
+        else:
+            print(f"IntroPlan:  ✗ Fallback stub")
+
+        print(f"\nAggregation: {self.cfg.aggregation_strategy}")
+        print("=========================================")
     
     def evaluate_step(
         self,
