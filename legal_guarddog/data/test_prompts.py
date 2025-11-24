@@ -360,11 +360,21 @@ def get_adversarial_test_cases() -> List[Dict[str, Any]]:
     """
     adversarial = get_prompts_by_type(PromptType.ADVERSARIAL)
 
+    # Import RiskCategory with flexible path handling
+    try:
+        from legal_guarddog.policies.legal_policy_engine import RiskCategory
+    except ModuleNotFoundError:
+        # If running from within legal_guarddog directory
+        import sys
+        from pathlib import Path
+        parent_dir = Path(__file__).parent.parent.parent
+        if str(parent_dir) not in sys.path:
+            sys.path.insert(0, str(parent_dir))
+        from legal_guarddog.policies.legal_policy_engine import RiskCategory
+
     test_cases = []
     for prompt_data in adversarial:
         # Map category string to RiskCategory enum
-        from legal_guarddog.policies.legal_policy_engine import RiskCategory
-
         category_map = {
             "dual_use": RiskCategory.DUAL_USE,
             "copyright": RiskCategory.COPYRIGHT,
@@ -384,10 +394,20 @@ def get_benign_test_cases() -> List[Dict[str, Any]]:
     """Get benign test cases for false positive evaluation"""
     benign = get_prompts_by_type(PromptType.BENIGN)
 
-    test_cases = []
-    for prompt_data in benign:
+    # Import RiskCategory with flexible path handling
+    try:
+        from legal_guarddog.policies.legal_policy_engine import RiskCategory
+    except ModuleNotFoundError:
+        # If running from within legal_guarddog directory
+        import sys
+        from pathlib import Path
+        parent_dir = Path(__file__).parent.parent.parent
+        if str(parent_dir) not in sys.path:
+            sys.path.insert(0, str(parent_dir))
         from legal_guarddog.policies.legal_policy_engine import RiskCategory
 
+    test_cases = []
+    for prompt_data in benign:
         category_map = {
             "dual_use": RiskCategory.DUAL_USE,
             "copyright": RiskCategory.COPYRIGHT,
