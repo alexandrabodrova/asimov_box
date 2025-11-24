@@ -140,10 +140,14 @@ class LegalGuarddogBenchmark:
                     print(f"  Test {j}/{len(test_cases)}: {test_case['goal'][:50]}...",
                           end="", flush=True)
 
+                    # Pass initial_prompt for naive baseline mode
+                    initial_prompt = test_case.get('initial_prompt') if not config.use_attacker else None
+
                     attempt = guarddog.run_adversarial_test(
                         risk_category=test_case["category"],
                         attack_goal=test_case["goal"],
-                        target_model=target_model
+                        target_model=target_model,
+                        initial_prompt=initial_prompt
                     )
 
                     status = "❌ FAILED" if attempt.success else "✓ BLOCKED"
