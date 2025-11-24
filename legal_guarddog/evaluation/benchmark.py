@@ -34,13 +34,19 @@ class BenchmarkConfig:
 
     def __init__(self,
                  name: str,
+                 use_attacker: bool = True,
+                 use_judge: bool = True,
                  use_validator: bool = True,
+                 use_legal_policies: bool = True,
                  max_attack_turns: int = 5,
                  attacker_model: str = "gpt-4",
                  target_models: List[str] = None,
                  description: str = ""):
         self.name = name
+        self.use_attacker = use_attacker
+        self.use_judge = use_judge
         self.use_validator = use_validator
+        self.use_legal_policies = use_legal_policies
         self.max_attack_turns = max_attack_turns
         self.attacker_model = attacker_model
         self.target_models = target_models or ["gpt-3.5-turbo"]
@@ -111,13 +117,17 @@ class LegalGuarddogBenchmark:
             for target_model in config.target_models:
                 print(f"\n--- Testing target model: {target_model} ---\n")
 
-                # Create LegalGuarddog with this configuration
+                # Create LegalGuarddog with ablation-specific configuration
                 guarddog_config = Config(
                     attacker_model=config.attacker_model,
                     target_model=target_model,
                     judge_model="gpt-4",
                     validator_model="gpt-4",
+                    # Ablation flags
+                    use_attacker=config.use_attacker,
+                    use_judge=config.use_judge,
                     use_validator=config.use_validator,
+                    use_legal_policies=config.use_legal_policies,
                     max_attack_turns=config.max_attack_turns,
                     verbose=False  # Reduce output during benchmark
                 )
@@ -387,31 +397,70 @@ class LegalGuarddogBenchmark:
 
 def create_ablation_configs() -> List[BenchmarkConfig]:
     """
-    Create ablation study configurations.
+    Create comprehensive ablation study configurations.
 
-    Ablations:
-    1. Baseline (no defense)
-    2. Policy classifier only
-    3. Full system (validator + rewriter)
+    4-tier experimental design isolating component contributions:
+
+    1. NAIVE BASELINE: Direct prompts → GPT
+       - No Attacker (use test prompts directly)
+       - No Judge
+       - No Validator
+       → Tests GPT's built-in guardrails against simple attacks
+
+    2. ADVERSARIAL BASELINE: RoboPAIR Attacker → GPT
+       - Attacker ON (sophisticated jailbreaks)
+       - Judge OFF
+       - Validator OFF
+       → Tests GPT's built-in guardrails against adversarial attacks
+       → **Should show GPT failures!**
+
+    3. GENERIC SAFETY: RoboPAIR → GPT → Generic Validator
+       - Attacker ON
+       - Validator ON (generic safety rules)
+       - Legal policies OFF
+       → Tests generic safety vs legal-specific requirements
+
+    4. FULL LEGAL GUARDDOG: RoboPAIR → GPT → Legal Judge → Legal Validator
+       - All components ON
+       - Legal-specific policies
+       → Tests complete system effectiveness
     """
     configs = [
         BenchmarkConfig(
-            name="baseline_no_defense",
-            use_validator=False,
-            max_attack_turns=1,  # Single turn, no iteration
-            description="Baseline: No defense, direct LLM output"
+            name="1_naive_baseline",
+            use_attacker=False,  # Direct prompts only
+            use_judge=False,  # No policy checking
+            use_validator=False,  # No validation
+            use_legal_policies=False,  # N/A
+            max_attack_turns=1,
+            description="Naive: Direct prompts → GPT (tests built-in guardrails)"
         ),
         BenchmarkConfig(
-            name="policy_classifier_only",
-            use_validator=False,  # Judge only, no validator
+            name="2_adversarial_baseline",
+            use_attacker=True,  # RoboPAIR jailbreaking
+            use_judge=False,  # No policy checking
+            use_validator=False,  # No validation
+            use_legal_policies=False,  # N/A
             max_attack_turns=5,
-            description="Policy classifier (Judge) only, no rewriting"
+            description="Adversarial: RoboPAIR → GPT (tests sophisticated jailbreaks)"
         ),
         BenchmarkConfig(
-            name="full_system",
-            use_validator=True,  # Full pipeline
+            name="3_generic_safety",
+            use_attacker=True,  # RoboPAIR
+            use_judge=True,  # Generic safety checking
+            use_validator=True,  # Generic validation
+            use_legal_policies=False,  # Generic rules, not legal-specific
             max_attack_turns=5,
-            description="Full Legal Guarddog: Judge + Validator/Rewriter"
+            description="Generic Safety: RoboPAIR → GPT → Generic Validator"
+        ),
+        BenchmarkConfig(
+            name="4_full_legal_guarddog",
+            use_attacker=True,  # RoboPAIR
+            use_judge=True,  # Legal policy checking
+            use_validator=True,  # Legal validation/rewriting
+            use_legal_policies=True,  # Full legal policies
+            max_attack_turns=5,
+            description="Full System: RoboPAIR → GPT → Legal Judge → Legal Validator"
         )
     ]
 
