@@ -15,6 +15,12 @@
 !KnowDanger/**
 
 # =====================================
+# Whitelist the legal_guarddog folder
+# =====================================
+!legal_guarddog/
+!legal_guarddog/**
+
+# =====================================
 # Inside KnowDanger, ignore these subfolders
 # =====================================
 KnowDanger/KnowNo/
