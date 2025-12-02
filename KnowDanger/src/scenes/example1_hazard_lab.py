@@ -1,10 +1,10 @@
-
 """
 Example 1: Hazard-Aware Lab Runner (campus-safe proxies)
 Covers safety-ambiguity types: Spatial, Temporal, Sensing, Attribute.
 """
-from knowdanger.core.knowdanger_core import Scene, PlanCandidate, Step
 from __future__ import annotations
+
+from knowdanger.core.knowdanger_core import Scene, PlanCandidate, Step
 import os, json, csv, datetime
 from typing import Any, Dict, List, Optional
 
