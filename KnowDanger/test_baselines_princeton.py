@@ -18,7 +18,7 @@ Usage:
     python test_baselines_princeton.py --all
 
 Options:
-    --model MODEL        Choose model: gpt-3.5-turbo-16k (default), gpt-4-turbo, gemini-pro
+    --model MODEL        Choose model: gpt-4-turbo (default), gpt-3.5-turbo, gemini-pro
     --test-api           Test API connection before running benchmarks
     --verbose            Show detailed output
 """
@@ -60,6 +60,18 @@ if "PORTKEY_API_KEY" not in os.environ:
 print(f"✓ PORTKEY_API_KEY found: {os.environ['PORTKEY_API_KEY'][:15]}...")
 print()
 
+# Setup OpenAI compatibility shim for RoboGuard
+print("Setting up OpenAI SDK compatibility...")
+try:
+    import openai_compat
+    # Note: We'll configure it with the actual model later
+    # For now just install the compatibility layer
+    openai_compat.install_mock_openai()
+    print("✓ OpenAI compatibility shim installed")
+except Exception as e:
+    print(f"⚠️  Could not install compatibility shim: {e}")
+print()
+
 # Import core modules
 print("Loading core modules...")
 try:
@@ -78,11 +90,21 @@ KNOWNO_AVAILABLE = False
 INTROPLAN_AVAILABLE = False
 
 try:
+    # Configure OpenAI to use Portkey before importing RoboGuard
+    import openai
+    openai.api_base = "https://api.portkey.ai/v1"
+    openai.api_key = os.environ.get("PORTKEY_API_KEY")
+
+    # Patch RoboGuard to use compatibility shim
+    import openai_compat
+    openai_compat.patch_roboguard()
+
+    # Now import RoboGuard
     from roboguard.roboguard import RoboGuard
     import roboguard.generator
     import roboguard.synthesis
     ROBOGUARD_AVAILABLE = True
-    print("✓ RoboGuard (with spot)")
+    print("✓ RoboGuard (with spot + Princeton API)")
 except Exception as e:
     print(f"⚠️  RoboGuard not available: {e}")
 
@@ -517,8 +539,8 @@ def main():
     parser.add_argument("--introplan", action="store_true", help="Test IntroPlan baseline")
     parser.add_argument("--full", action="store_true", help="Test full KnowDanger")
     parser.add_argument("--all", action="store_true", help="Test all baselines")
-    parser.add_argument("--model", type=str, default="gpt-3.5-turbo-16k",
-                        help="Model to use (gpt-3.5-turbo-16k, gpt-4-turbo, gemini-pro)")
+    parser.add_argument("--model", type=str, default="gpt-4-turbo",
+                        help="Model to use (gpt-4-turbo, gpt-3.5-turbo, gemini-pro)")
     parser.add_argument("--test-api", action="store_true", help="Test API connection first")
     parser.add_argument("--output", type=str, default="logs/baseline_test", help="Output directory")
     parser.add_argument("--scenes", nargs="+", help="Specific scenes to test")

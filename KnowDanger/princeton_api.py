@@ -5,9 +5,10 @@ This module provides a wrapper to use Princeton's AI Sandbox (via Portkey)
 as a drop-in replacement for OpenAI API in your baseline tests.
 
 Supported models:
-- gpt-4-turbo
-- gpt-3.5-turbo-16k
-- Gemini models
+- gpt-4-turbo (recommended, works well)
+- gpt-3.5-turbo (try if gpt-3.5-turbo-16k fails)
+- gemini-pro
+Note: Model names are case-sensitive and must match Portkey's routing config
 
 Usage:
     from princeton_api import PrincetonLLM
@@ -26,7 +27,7 @@ class PrincetonLLM:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "gpt-3.5-turbo-16k",
+        model: str = "gpt-4-turbo",
         portkey_url: Optional[str] = None
     ):
         """
@@ -34,7 +35,7 @@ class PrincetonLLM:
 
         Args:
             api_key: Portkey API key (or set PORTKEY_API_KEY env var)
-            model: Model to use (gpt-4-turbo, gpt-3.5-turbo-16k, or gemini)
+            model: Model to use (default: gpt-4-turbo). Options: gpt-4-turbo, gpt-3.5-turbo, gemini-pro
             portkey_url: Portkey gateway URL (if different from default)
         """
         self.api_key = api_key or os.environ.get("PORTKEY_API_KEY")
