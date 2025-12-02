@@ -19,6 +19,7 @@
 # =====================================
 KnowDanger/KnowNo/
 KnowDanger/RoboGuard1/
+legal_guarddog/
 
 # =====================================
 # Common junk inside whitelisted dirs
@@ -58,3 +59,6 @@ dist/
 .idea/
 *.sublime-project
 *.sublime-workspace
+KnowDanger/src/tests/spot-planning-demo
+KnowDanger/SPINE
+KnowDanger/RoboGuard
