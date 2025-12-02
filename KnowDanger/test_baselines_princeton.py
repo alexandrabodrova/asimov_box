@@ -108,8 +108,12 @@ try:
     import roboguard_ltl_patch
     roboguard_ltl_patch.patch_roboguard_synthesis()
 
+    # Patch RoboGuard to accept manipulation actions (not just ROBOT_API)
+    import roboguard_action_patch
+    roboguard_action_patch.patch_roboguard_actions()
+
     ROBOGUARD_AVAILABLE = True
-    print("✓ RoboGuard (with spot + Princeton API + LTL patch)")
+    print("✓ RoboGuard (with spot + Princeton API + LTL + action patches)")
 except Exception as e:
     print(f"⚠️  RoboGuard not available: {e}")
 
