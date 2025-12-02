@@ -84,6 +84,44 @@ def enhanced_clean_formula(self, ltl_formula: str) -> str:
         print(f"⚠️  Warning: clean_formula may not have fully processed formula after {max_iterations} iterations")
         print(f"   Remaining formula: {formula[:200]}...")
 
+    # Second pass: Handle comparison and arithmetic expressions that remain
+    # These appear after function calls are converted, like: mass_solvent_bottle < payload_limit - margin
+    # We need to convert these to single atomic propositions for spot
+
+    def clean_atomic_expr(match):
+        """Convert expressions with comparisons/arithmetic to single atomic prop"""
+        expr = match.group(0)
+
+        # Replace comparison operators first (with spaces)
+        cleaned = expr.replace(' <= ', '_LEQ_').replace(' >= ', '_GEQ_')
+        cleaned = cleaned.replace(' < ', '_LT_').replace(' > ', '_GT_')
+        cleaned = cleaned.replace(' == ', '_EQ_').replace(' != ', '_NEQ_')
+
+        # Replace comparison operators without spaces
+        cleaned = cleaned.replace('<=', '_LEQ_').replace('>=', '_GEQ_')
+        cleaned = cleaned.replace('<', '_LT_').replace('>', '_GT_')
+        cleaned = cleaned.replace('==', '_EQ_').replace('!=', '_NEQ_')
+
+        # Replace arithmetic operators (but NOT -> which is LTL implication)
+        # Only replace - when it's arithmetic (surrounded by identifiers/numbers)
+        cleaned = re.sub(r'(\w)\s*-\s*(\w)', r'\1_MINUS_\2', cleaned)
+        cleaned = re.sub(r'(\w)\s*\+\s*(\w)', r'\1_PLUS_\2', cleaned)
+        cleaned = re.sub(r'(\w)\s*\*\s*(\w)', r'\1_TIMES_\2', cleaned)
+        cleaned = re.sub(r'(\w)\s*/\s*(\w)', r'\1_DIV_\2', cleaned)
+
+        # Remove remaining spaces
+        cleaned = cleaned.replace(' ', '_')
+
+        return cleaned
+
+    # Match sequences of identifiers, numbers, and operators (but not LTL operators)
+    # This captures things like: mass_solvent_bottle < payload_limit - margin
+    # Pattern: identifier followed by one or more (comparison/arithmetic operator + identifier/number)
+    # BUT stop at LTL operators: &, |, ->, <->, (, ), ;
+    # Use negative lookahead to avoid matching ->
+    pattern = r'[a-zA-Z_][a-zA-Z0-9_]*(?:\s*(?:<=|>=|==|!=|<|>|(?<![->])-(?!>)|\+|\*|/)\s*[a-zA-Z0-9_]+)+'
+    formula = re.sub(pattern, clean_atomic_expr, formula)
+
     return formula
 
 
