@@ -259,7 +259,8 @@ def test_roboguard_baseline(scene_data: List, princeton_llm: PrincetonLLM, verbo
 
                 try:
                     actions = [step.action for step in plan.steps]
-                    is_safe, explanation = rg.check_plan(actions)
+                    # RoboGuard class uses validate_plan(), not check_plan()
+                    is_safe, explanation = rg.validate_plan(actions)
 
                     verdict = "SAFE" if is_safe else "UNSAFE"
 
