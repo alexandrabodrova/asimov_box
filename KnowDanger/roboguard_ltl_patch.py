@@ -122,6 +122,23 @@ def enhanced_clean_formula(self, ltl_formula: str) -> str:
     pattern = r'[a-zA-Z_][a-zA-Z0-9_]*(?:\s*(?:<=|>=|==|!=|<|>|(?<![->])-(?!>)|\+|\*|/)\s*[a-zA-Z0-9_]+)+'
     formula = re.sub(pattern, clean_atomic_expr, formula)
 
+    # Third pass: Handle invalid sequence operators
+    # LLM sometimes generates (expr1; expr2) which is invalid in spot when inside G()
+    # Convert these to conjunction: (expr1; expr2) -> (expr1 & expr2)
+    # This loses temporal ordering but makes the formula valid
+    def replace_sequence(match):
+        """Replace (a; b) with (a & b) to make it valid LTL"""
+        # Get content between parentheses
+        content = match.group(1)
+        # Replace ; with &
+        fixed = content.replace(';', ' &')
+        return f'({fixed})'
+
+    # Match (expr; expr) patterns
+    # This handles cases like: (pour_A_beaker_B; pour_C_beaker_B)
+    pattern = r'\(([^()]+;[^()]+)\)'
+    formula = re.sub(pattern, replace_sequence, formula)
+
     return formula
 
 
