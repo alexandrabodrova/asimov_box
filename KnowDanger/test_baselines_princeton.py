@@ -103,8 +103,13 @@ try:
     from roboguard.roboguard import RoboGuard
     import roboguard.generator
     import roboguard.synthesis
+
+    # Patch RoboGuard's LTL cleaning to handle all predicates
+    import roboguard_ltl_patch
+    roboguard_ltl_patch.patch_roboguard_synthesis()
+
     ROBOGUARD_AVAILABLE = True
-    print("✓ RoboGuard (with spot + Princeton API)")
+    print("✓ RoboGuard (with spot + Princeton API + LTL patch)")
 except Exception as e:
     print(f"⚠️  RoboGuard not available: {e}")
 
