@@ -1,0 +1,167 @@
+""" Single-step, tabletop manipulation environment
+
+"""
+import os
+import argparse
+import pickle
+import logging
+import random
+from omegaconf import OmegaConf
+from agent.multiple_choice import MultipleChoice
+from util.data import postprocess_mc
+from util.vanilla import check_true_label
+
+
+def main(cfg):
+
+    # Load example prompt
+    with open(
+        os.path.join(
+            cfg.parent_data_folder, cfg.example_prompt_path_from_parent
+        ), 'r'
+    ) as f:
+        raw_example_prompt = f.read()
+
+    # Multiple choice agent
+    mc_agent = MultipleChoice()
+
+    # Load previous data
+    prev_data_path = os.path.join(
+        cfg.parent_data_folder, cfg.prev_data_path_from_parent
+    )
+    with open(prev_data_path, 'rb') as f:
+        data_all = pickle.load(f)
+
+    # Load mc response data if specified
+    if cfg.mc_template:  # no LLM response then
+        mc_pre_response_data_all = [None] * cfg.num_data
+    else:
+        mc_pre_response_data_path = os.path.join(
+            cfg.parent_data_folder, cfg.mc_pre_response_data_path_from_parent
+        )
+        with open(mc_pre_response_data_path, 'r') as f:
+            mc_pre_response_data_all = f.read().split('--0000--')
+
+    # Generate data
+    example_prompt_all = []
+    flag_prompt_verify = True
+    for data_ind, (data, mc_pre_response_data) in enumerate(
+        zip(data_all, mc_pre_response_data_all)
+    ):
+        if data_ind > cfg.num_example:
+            break
+
+        # Template MC
+        if cfg.mc_template:
+            mc_pre_response = None
+            template_mc_data = data['init']['template_mc']
+
+            # Post-process the sampled multiple choices
+            mc_prompt, mc_all, mc_types = postprocess_mc(
+                template_mc_data['mc_all'],
+                template_mc_data['mc_types'],
+                cfg.mc_sigs,
+                add_mc=cfg.add_mc,
+                verbose=False,
+            )
+
+            # Print probe prompt
+            logging.info(f"========== {data_ind+1}/{cfg.num_data} ==========")
+            logging.info(data['init']['request'])
+            logging.info(mc_prompt)
+
+        # Prompted MC
+        else:
+            mc_pre_response = mc_pre_response_data.strip()
+
+        # Randomize order of choices, add prefix
+        try:
+            mc_prompt, mc_all, _ = mc_agent.process_multiple_choice(
+                mc_pre_response, add_mc=cfg.add_mc
+            )
+        except:
+            breakpoint()
+
+        # Get action prompt
+        example_prompt = raw_example_prompt.replace(
+            '{scene_description}', data['init']['scene_description']
+        )
+        example_prompt = example_prompt.replace(
+            '{request}', data['init']['request']
+        )
+        example_prompt = example_prompt.replace('{mc}', mc_prompt)
+
+        # get answer
+        ground_truth = data['init']['request_unambiguous']
+        ambiguity_name = data['init']['ambiguity_name']
+        top_tokens = ['A', 'B', 'C', 'D', 'E']
+        true_label = []
+        none_index = None
+        # go through the multiple choices
+        for i, mc in enumerate(mc_all):
+            if mc == 'do nothing':
+                continue
+            if 'not listed here' in mc:
+                none_index = i
+                continue
+            if len(mc) < 5:
+                continue
+
+            true_label_mc = check_true_label(ground_truth, mc, ambiguity_name)
+            if true_label_mc == 'True':
+                true_label.append(top_tokens[i])
+        if len(true_label) == 0:
+            true_label.append(top_tokens[none_index])
+        true_label = random.choice(true_label)
+        example_prompt = example_prompt.replace('{true_label}', true_label)
+
+        # Verify action prompt once
+        if flag_prompt_verify:
+            logging.info("===========")
+            input(example_prompt + '\n\nPress any key to verify...')
+            flag_prompt_verify = False
+
+        # Save
+        example_prompt_all.append(example_prompt)
+        logging.info("========================\n")
+
+    # Save text file
+    with open(cfg.txt_save_path, 'w') as f:
+        f.write('--0000--'.join(example_prompt_all))
+
+    # Summary
+    logging.info('\n============== Summary ==============')
+    logging.info(f'Number of examples generated: {cfg.num_example}')
+    logging.info(f'Prompt saved to: {cfg.txt_save_path}.')
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-cf", "--cfg_file", help="cfg file path", default='', type=str
+    )
+    args = parser.parse_args()
+    cfg = OmegaConf.load(args.cfg_file)
+    OmegaConf.resolve(cfg)
+    cfg.data_folder = os.path.dirname(args.cfg_file)
+    cfg.parent_data_folder = os.path.dirname(cfg.data_folder)
+
+    # Logging
+    cfg.logging_path = os.path.join(
+        cfg.data_folder, cfg.log_file_name + '.log'
+    )
+    logging.basicConfig(
+        level=logging.INFO, format='%(message)s', handlers=[
+            logging.FileHandler(cfg.logging_path, mode='w'),
+            logging.StreamHandler()
+        ]
+    )
+
+    # Save path
+    cfg.txt_save_path = os.path.join(
+        cfg.data_folder, cfg.data_save_name + '.txt'
+    )
+
+    # run
+    random.seed(cfg.seed)
+    main(cfg)

@@ -1,0 +1,52 @@
+{
+    "Bring me the cola.": [
+        "Coke",
+        "Pepsi"
+    ],
+    "Bring me the soda.": [
+        "orange soda",
+        "Coke",
+        "Pepsi",
+        "Sprite"
+    ],
+    "Bring me the drink.": [
+        "bottled water",
+        "orange soda",
+        "RedBull",
+        "Coke",
+        "Pepsi",
+        "bottled unsweetened tea",
+        "Sprite"
+    ],
+    "Bring me the sweet drink.": [
+        "orange soda",
+        "Coke",
+        "Pepsi",
+        "Sprite"
+    ],
+    "Bring me the chips.": [
+        "rice chips",
+        "jalapeno chips",
+        "kettle chips",
+        "multigrain chips"
+    ],
+    "Bring me the fruit.": [
+        "apple",
+        "orange"
+    ],
+    "Bring me the snack.": [
+        "rice chips",
+        "jalapeno chips",
+        "kettle chips",
+        "multigrain chips",
+        "apple",
+        "energy bar",
+        "orange"
+    ],
+    "Bring me the caffeinated drink.": [
+        "RedBull",
+        "bottled unsweetened tea",
+        "Coke",
+        "Pepsi"
+    ]
+}
