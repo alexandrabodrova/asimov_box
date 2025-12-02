@@ -1,0 +1,10 @@
+__pycache__/
+*.egg-info/
+data/Archive/*/
+paper/
+
+*.pkl
+*.log
+*.txt
+*.yaml
+*.png

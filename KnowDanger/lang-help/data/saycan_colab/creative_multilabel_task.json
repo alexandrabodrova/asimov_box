@@ -1,0 +1,180 @@
+{
+    "Bring me a healthy snack.": [
+        "apple",
+        "orange",
+        "multigrain chips"
+    ],
+    "Bring me a flavored drink.": [
+        "orange soda",
+        "RedBull",
+        "Coke",
+        "Pepsi",
+        "bottled unsweetened tea",
+        "Sprite"
+    ],
+    "I need a pick-me-up.": [
+        "RedBull",
+        "bottled unsweetened tea",
+        "energy bar"
+    ],
+    "I want a healthy snack.": [
+        "apple",
+        "orange",
+        "multigrain chips"
+    ],
+    "I just worked out; can you get me something.": [
+        "bottled water",
+        "energy bar",
+        "apple"
+    ],
+    "I'm craving something fizzy.": [
+        "orange soda",
+        "Coke",
+        "Pepsi",
+        "Sprite"
+    ],
+    "I need a quick energy boost.": [
+        "RedBull",
+        "energy bar"
+    ],
+    "I want something crunchy.": [
+        "rice chips",
+        "jalapeno chips",
+        "kettle chips",
+        "multigrain chips"
+    ],
+    "I could use some hydration.": [
+        "bottled water",
+        "orange soda",
+        "Coke",
+        "Pepsi",
+        "Sprite",
+        "bottled unsweetened tea"
+    ],
+    "I feel like having something with bubbles.": [
+        "orange soda",
+        "Coke",
+        "Pepsi",
+        "Sprite"
+    ],
+    "I want something to quench my thirst.": [
+        "bottled water",
+        "orange soda",
+        "Coke",
+        "Pepsi",
+        "bottled unsweetened tea",
+        "Sprite"
+    ],
+    "I need a sugar rush.": [
+        "Coke",
+        "Pepsi",
+        "Sprite",
+        "energy bar"
+    ],
+    "Bring me a soda that isn't a Coke.": [
+        "orange soda",
+        "Pepsi",
+        "Sprite"
+    ],
+    "Bring me a drink that isn't water.": [
+        "orange soda",
+        "RedBull",
+        "Coke",
+        "Pepsi",
+        "bottled unsweetened tea",
+        "Sprite"
+    ],
+    "Bring me a snack that isn't chips.": [
+        "apple",
+        "energy bar",
+        "orange"
+    ],
+    "I want a drink, but nothing too sweet.": [
+        "bottled water",
+        "bottled unsweetened tea"
+    ],
+    "I'm in the mood for a classic soda.": [
+        "Coke",
+        "Pepsi",
+        "Sprite"
+    ],
+    "Bring me something with a kick.": [
+        "RedBull",
+        "jalapeno chips"
+    ],
+    "I want a fruit-flavored drink": [
+        "Sprite",
+        "orange soda"
+    ],
+    "I'm craving a fizzy drink that's not a cola.": [
+        "orange soda",
+        "Sprite"
+    ],
+    "I need a quick snack, but not chips.": [
+        "apple",
+        "energy bar",
+        "orange"
+    ],
+    "I'd like a drink that doesn't come in a can.": [
+        "bottled water",
+        "bottled unsweetened tea"
+    ],
+    "I want something refreshing, but not water.": [
+        "orange soda",
+        "Sprite",
+        "bottled unsweetened tea"
+    ],
+    "Bring me something to wash down this spicy food.": [
+        "bottled water",
+        "Sprite"
+    ],
+    "Bring me something to munch on that isn't too heavy.": [
+        "rice chips",
+        "multigrain chips"
+    ],
+    "I had some chips already; can you get me something different?": [
+        "apple",
+        "orange",
+        "energy bar"
+    ],
+    "I need a snack that won't ruin my diet.": [
+        "apple",
+        "orange"
+    ],
+    "Bring me a drink that reminds me of summer.": [
+        "Sprite",
+        "orange soda"
+    ],
+    "I'm allergic to jalapeno; can you get me some chips?": [
+        "rice chips",
+        "kettle chips",
+        "multigrain chips"
+    ],
+    "I need something to help me power through my study session.": [
+        "RedBull",
+        "energy bar"
+    ],
+    "I want a snack, but I'm not in the mood for something sweet.": [
+        "rice chips",
+        "kettle chips",
+        "multigrain chips",
+        "jalapeno chips"
+    ],
+    "I need a snack that's easy on my stomach.": [
+        "rice chips",
+        "apple",
+        "orange"
+    ],
+    "I want a drink that's not too carbonated.": [
+        "bottled water",
+        "bottled unsweetened tea"
+    ],
+    "I'd like a snack that's not too noisy to eat.": [
+        "orange",
+        "energy bar"
+    ],
+    "Bring me something to keep me going during a long drive.": [
+        "RedBull",
+        "energy bar"
+    ]
+}

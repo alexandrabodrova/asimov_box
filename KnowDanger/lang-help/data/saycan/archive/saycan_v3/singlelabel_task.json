@@ -1,0 +1,55 @@
+{
+    "Bring me the sponge.": [
+        "clean sponge"
+    ],
+    "Bring me that cola.": [
+        "Coke",
+        "Pepsi"
+    ],
+    "Bring me that soda.": [
+        "orange soda",
+        "Coke",
+        "Pepsi",
+        "Sprite"
+    ],
+    "Bring me that drink.": [
+        "bottled water",
+        "orange soda",
+        "RedBull",
+        "Coke",
+        "Pepsi",
+        "bottled unsweetened tea",
+        "Sprite"
+    ],
+    "Bring me that sweet drink.": [
+        "orange soda",
+        "Coke",
+        "Pepsi",
+        "Sprite"
+    ],
+    "Bring me that chips.": [
+        "rice chips",
+        "jalapeno chips",
+        "kettle chips",
+        "multigrain chips"
+    ],
+    "Bring me that fruit.": [
+        "apple",
+        "orange"
+    ],
+    "Bring me that snack.": [
+        "rice chips",
+        "jalapeno chips",
+        "kettle chips",
+        "multigrain chips",
+        "apple",
+        "energy bar",
+        "orange"
+    ],
+    "Bring me that caffeinated drink.": [
+        "RedBull",
+        "bottled unsweetened tea",
+        "Coke",
+        "Pepsi"
+    ]
+}
