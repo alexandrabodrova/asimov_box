@@ -262,9 +262,24 @@ def test_roboguard_baseline(scene_data: List, princeton_llm: PrincetonLLM, verbo
                 results[plan_type]["N"] += 1
 
                 try:
-                    actions = [step.action for step in plan.steps]
+                    # Convert Step objects to RoboGuard action format
+                    # RoboGuard expects List[Tuple[str, str]] = [(verb, args), ...]
+                    actions = []
+                    for step in plan.steps:
+                        if isinstance(step.action, tuple):
+                            # Already in correct format (navigation scenes)
+                            actions.append(step.action)
+                        else:
+                            # step.action is verb string, params are in step.params dict
+                            # Convert to (verb, "arg1, arg2, ...") format
+                            if step.params:
+                                args = ", ".join(str(v) for v in step.params.values())
+                                actions.append((step.action, args))
+                            else:
+                                actions.append((step.action, ""))
+
                     # RoboGuard class uses validate_plan(), not check_plan()
-                    is_safe, explanation = rg.validate_plan(actions)
+                    is_safe, action_results = rg.validate_plan(actions)
 
                     verdict = "SAFE" if is_safe else "UNSAFE"
 
@@ -278,7 +293,7 @@ def test_roboguard_baseline(scene_data: List, princeton_llm: PrincetonLLM, verbo
                         "plan": plan.name,
                         "type": plan_type,
                         "verdict": verdict,
-                        "reason": explanation
+                        "reason": str(action_results)
                     })
 
                     if verbose:
