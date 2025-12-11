@@ -43,8 +43,7 @@ def make_scene() -> Scene:
     return Scene(
         name="navigation_search_rescue",
         rules=rules,
-        semantic_graph=semantic_graph,
-        description="Robot performing search and rescue in damaged building"
+        semantic_graph=semantic_graph
     )
 
 
