@@ -33,11 +33,42 @@ class ControlSynthesis:
         """Clean LTL propositions for model checking.
 
         Robot API is formatted as `function(argument)`, which conflicts with
-        ltl syntax. We change to `function_argument
+        ltl syntax. We change to `function_argument`.
+
+        Also sanitizes special characters that spot's LTL parser cannot handle:
+        - Single quotes (')
+        - Double quotes (")
+        - Question marks (?)
+        - Spaces (replaced with underscores)
+        - Other special characters
         """
         functions = ROBOT_API
         pattern = r"\b(" + "|".join(functions) + ")\(([^)]+)\)"
         result = re.sub(pattern, r"\1_\2", ltl_formula)
+
+        # Remove single and double quotes
+        result = result.replace("'", "").replace('"', "")
+
+        # Remove question marks
+        result = result.replace("?", "")
+
+        # Replace spaces within identifiers with underscores
+        # (but preserve spaces around LTL operators)
+        # First, protect LTL operators by marking them
+        ltl_operators = ['&', '|', '->', '<->', '!', 'G', 'F', 'X', 'U', 'R', 'W', 'M']
+        for op in ltl_operators:
+            # Add spaces around operators to preserve them
+            result = re.sub(rf'(\s*)({re.escape(op)})(\s*)', r' \2 ', result)
+
+        # Now replace any remaining problematic characters in identifiers
+        # Keep alphanumeric, underscores, and LTL syntax characters
+        result = re.sub(r'[^\w\s&|><!GFXURWM()-]', '_', result)
+
+        # Clean up multiple underscores and spaces
+        result = re.sub(r'_+', '_', result)
+        result = re.sub(r'\s+', ' ', result)
+        result = result.strip()
+
         return result
 
     def plt(self) -> spot.jupyter.SVG:
