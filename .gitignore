@@ -53,12 +53,13 @@ dist/
 *.log
 *.tmp
 *.temp
+*json
 
 # IDE/editor settings
 .vscode/
 .idea/
 *.sublime-project
 *.sublime-workspace
-KnowDanger/src/tests/spot-planning-demo
+*KnowDanger/src/tests/spot-planning-demo
 # KnowDanger/SPINE
 # KnowDanger/RoboGuard
