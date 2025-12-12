@@ -54,6 +54,7 @@ class Step:
     # Optional LLM candidates for next-step decision (KnowNo uses these)
     candidates: Optional[List[Tuple[str, float]]] = None  # (candidate_text, score/logit/prob)
     meta: Dict[str, Any] = field(default_factory=dict)
+    description: Optional[str] = None  # Human-readable description of the step
 
 @dataclass
 class PlanCandidate:

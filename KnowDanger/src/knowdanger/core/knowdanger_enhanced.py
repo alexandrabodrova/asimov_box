@@ -51,6 +51,7 @@ class Step:
     params: Dict[str, Any] = field(default_factory=dict)
     candidates: Optional[List[Tuple[str, float]]] = None
     meta: Dict[str, Any] = field(default_factory=dict)
+    description: Optional[str] = None  # Human-readable description of the step
 
 @dataclass
 class PlanCandidate:
