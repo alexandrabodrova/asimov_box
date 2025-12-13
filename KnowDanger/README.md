@@ -3,6 +3,7 @@
 
 ```bash
 pip install -e .
+# conda activate knowdanger_venv-311
 ```
 
 ### 3. Test It

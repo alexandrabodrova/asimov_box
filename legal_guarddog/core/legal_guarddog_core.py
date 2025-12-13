@@ -159,7 +159,8 @@ class LLMInterface:
             api_key = self.config.api_key
             if api_key is None:
                 # Try Portkey API key first (Princeton), then OpenAI
-                api_key = os.getenv("PORTKEY_API_KEY") or os.getenv("PRINCETON_API_KEY") or os.getenv("OPENAI_API_KEY")
+                api_key = os.getenv("OPENAI_API_KEY")
+                # os.getenv("PORTKEY_API_KEY") or os.getenv("PRINCETON_API_KEY") or 
 
             if not api_key:
                 raise ValueError("No API key found. Set PORTKEY_API_KEY, PRINCETON_API_KEY, or OPENAI_API_KEY environment variable, or pass api_key in Config")

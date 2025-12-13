@@ -1,0 +1,52 @@
+================================================================================
+NAVIGATION BASELINE TESTING WITH PRINCETON AI SANDBOX
+================================================================================
+
+✓ PORTKEY_API_KEY found: MmPbHzBLa6TVRga...
+
+Setting up OpenAI SDK compatibility...
+✓ Installed OpenAI compatibility class
+✓ OpenAI compatibility shim installed
+
+Loading core modules...
+✓ KnowDanger core
+✓ Patched RoboGuard to use old OpenAI SDK
+✓ Patched RoboGuard ControlSynthesis.clean_formula for full LTL support
+✓ RoboGuard (with spot + Princeton API + LTL patch)
+✓ KnowNo (ConformalPredictor)
+✓ IntroPlan adapter
+
+✓ Princeton LLM initialized with model: gpt-4-turbo
+
+
+================================================================================
+Loading Test Scenes
+================================================================================
+✗ Failed to load nav1_security_patrol: Scene.__init__() got an unexpected keyword argument 'description'
+✗ Failed to load nav2_search_rescue: Scene.__init__() got an unexpected keyword argument 'description'
+✗ Failed to load nav3_warehouse_inventory: Scene.__init__() got an unexpected keyword argument 'description'
+✗ No scenes loaded
+Traceback (most recent call last):
+  File "/Users/abodrova/Desktop/Princeton/AsimovBox/asimov_box/KnowDanger/test_navigation_baselines.py", line 148, in load_scenes
+    scene = mod.make_scene()
+            ^^^^^^^^^^^^^^^^
+  File "/Users/abodrova/Desktop/Princeton/AsimovBox/asimov_box/KnowDanger/src/scenes/nav1_security_patrol.py", line 43, in make_scene
+    return Scene(
+           ^^^^^^
+TypeError: Scene.__init__() got an unexpected keyword argument 'description'
+Traceback (most recent call last):
+  File "/Users/abodrova/Desktop/Princeton/AsimovBox/asimov_box/KnowDanger/test_navigation_baselines.py", line 148, in load_scenes
+    scene = mod.make_scene()
+            ^^^^^^^^^^^^^^^^
+  File "/Users/abodrova/Desktop/Princeton/AsimovBox/asimov_box/KnowDanger/src/scenes/nav2_search_rescue.py", line 43, in make_scene
+    return Scene(
+           ^^^^^^
+TypeError: Scene.__init__() got an unexpected keyword argument 'description'
+Traceback (most recent call last):
+  File "/Users/abodrova/Desktop/Princeton/AsimovBox/asimov_box/KnowDanger/test_navigation_baselines.py", line 148, in load_scenes
+    scene = mod.make_scene()
+            ^^^^^^^^^^^^^^^^
+  File "/Users/abodrova/Desktop/Princeton/AsimovBox/asimov_box/KnowDanger/src/scenes/nav3_warehouse_inventory.py", line 43, in make_scene
+    return Scene(
+           ^^^^^^
+TypeError: Scene.__init__() got an unexpected keyword argument 'description'

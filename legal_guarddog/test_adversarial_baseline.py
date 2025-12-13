@@ -81,7 +81,7 @@ def test_adversarial_baseline():
         # - "gpt-4-turbo" (faster, cheaper, same quality as gpt-4)
         # - "gpt-4o" (latest, best performance)
         # - "gpt-4" (original, slower and more expensive)
-        model = "gpt-4-turbo"  # Change this to switch models
+        model = "gpt-4o"  # Change this to switch models
 
         config_kwargs["target_model"] = model
         config_kwargs["attacker_model"] = model
