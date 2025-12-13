@@ -92,6 +92,11 @@ class Config:
     judge_model: str = "gpt-4"
     validator_model: str = "gpt-4"
 
+    # API configuration (for custom endpoints like Princeton's API)
+    api_key: Optional[str] = None  # If None, will use OPENAI_API_KEY or PRINCETON_API_KEY env var
+    api_base: Optional[str] = None  # Custom API endpoint (e.g., "https://api.princeton.edu/llm/v1")
+    api_type: str = "openai"  # "openai" or "azure" or "princeton"
+
     # Adversarial loop parameters
     max_attack_turns: int = 5
     attack_success_threshold: float = 0.7  # Risk score threshold for successful attack
@@ -143,10 +148,28 @@ class LLMInterface:
         if self.config.llm_call_func:
             return self.config.llm_call_func(messages, model, temperature, max_tokens)
 
-        # Otherwise use OpenAI (default)
+        # Otherwise use OpenAI-compatible API
         try:
             import openai
-            client = openai.OpenAI()
+            import os
+
+            # Determine API key
+            api_key = self.config.api_key
+            if api_key is None:
+                # Try Princeton API key first, then OpenAI
+                api_key = os.getenv("PRINCETON_API_KEY") or os.getenv("OPENAI_API_KEY")
+
+            if not api_key:
+                raise ValueError("No API key found. Set PRINCETON_API_KEY or OPENAI_API_KEY environment variable, or pass api_key in Config")
+
+            # Create client with custom endpoint if provided
+            if self.config.api_base:
+                client = openai.OpenAI(
+                    api_key=api_key,
+                    base_url=self.config.api_base
+                )
+            else:
+                client = openai.OpenAI(api_key=api_key)
 
             response = client.chat.completions.create(
                 model=model,

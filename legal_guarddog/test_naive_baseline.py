@@ -15,24 +15,51 @@ if str(parent_dir) not in sys.path:
 from legal_guarddog.core.legal_guarddog_core import LegalGuarddog, Config
 from legal_guarddog.policies.legal_policy_engine import RiskCategory
 
+# Try to import Princeton config
+try:
+    from legal_guarddog.princeton_config import get_princeton_config
+    USE_PRINCETON = True
+except (ImportError, ValueError) as e:
+    USE_PRINCETON = False
+    print(f"⚠️  Princeton config not available: {e}")
+    print("   Falling back to OpenAI API\n")
+
 
 def test_naive_baseline_verbose():
     """Test naive baseline with GPT-4 and show actual responses."""
 
     print("="*80)
     print("NAIVE BASELINE TEST - GPT-4 TARGET MODEL")
+    if USE_PRINCETON:
+        print("Using Princeton LLM API")
+    else:
+        print("Using OpenAI API")
     print("="*80)
     print()
 
     # Configuration: Naive baseline (no attacker, no judge, no validator)
-    config = Config(
-        use_attacker=False,
-        use_judge=False,
-        use_validator=False,
-        target_model="gpt-4",  # Using GPT-4 as target
-        max_attack_turns=1,
-        verbose=False  # We'll print manually for better formatting
-    )
+    config_kwargs = {
+        "use_attacker": False,
+        "use_judge": False,
+        "use_validator": False,
+        "target_model": "gpt-4",  # Using GPT-4 as target
+        "max_attack_turns": 1,
+        "verbose": False  # We'll print manually for better formatting
+    }
+
+    # Add Princeton API config if available
+    if USE_PRINCETON:
+        try:
+            princeton_config = get_princeton_config()
+            config_kwargs.update(princeton_config)
+            print(f"✓ Configured with Princeton API: {princeton_config['api_base'][:50]}...")
+            print()
+        except Exception as e:
+            print(f"❌ Error loading Princeton config: {e}")
+            print("   Please configure princeton_config.py\n")
+            return [], 0
+
+    config = Config(**config_kwargs)
 
     guarddog = LegalGuarddog(config)
 
