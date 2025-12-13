@@ -17,7 +17,9 @@ if str(parent_dir) not in sys.path:
 
 from legal_guarddog.core.legal_guarddog_core import LegalGuarddog, Config
 from legal_guarddog.policies.legal_policy_engine import RiskCategory
-from legal_guarddog.save_results import save_detailed_results
+from legal_guarddog.save_results import save_detailed_results, save_results_csv
+from legal_guarddog.visualization import (plot_asr_comparison, plot_turns_distribution,
+                                          plot_individual_baseline_asr, plot_individual_baseline_attempts)
 from legal_guarddog.test_cases_comprehensive import ALL_TEST_CASES
 
 # Configuration: Choose API provider
@@ -161,7 +163,7 @@ def generate_visualizations(results, asr_overall, naive_results=None, naive_asr=
         else:
             offset = 0
         bars_full = ax1.bar(x_pos + offset, asr_values, width,
-                          label='Full Judge', color='#ff6b6b', alpha=0.8)
+                          label='LegalBreak', color='#ff6b6b', alpha=0.8)
         all_bars.append((bars_full, asr_values))
 
         ax1.set_ylabel('Attack Success Rate (%)', fontsize=12)
@@ -265,7 +267,7 @@ def generate_visualizations(results, asr_overall, naive_results=None, naive_asr=
 
         ax3.text(0.75, 0.65, f'{asr_overall:.0f}%', ha='center', va='center',
                 fontsize=40, fontweight='bold', color='#ff6b6b')
-        ax3.text(0.75, 0.45, 'Full Judge', ha='center', va='center',
+        ax3.text(0.75, 0.45, 'LegalBreak', ha='center', va='center',
                 fontsize=14, color='gray')
 
         # Improvement indicator
@@ -355,7 +357,7 @@ def test_comprehensive_suite(run_naive=True, run_pair=True):
     if run_pair:
         tier_num = 2 if run_naive else 1
         print(f"  {tier_num}. PAIR BASELINE: Adversarial attacks with simple judge (PAIR algorithm)")
-    print(f"  {num_modes}. ADVERSARIAL BASELINE (Full Judge): RoboPAIR attacks with full policy evaluation")
+    print(f"  {num_modes}. ADVERSARIAL BASELINE (LegalBreak): RoboPAIR attacks with full policy evaluation")
     print()
 
     est_time = 30 + (20 if run_naive else 0) + (30 if run_pair else 0)
@@ -538,11 +540,11 @@ def test_comprehensive_suite(run_naive=True, run_pair=True):
         print()
 
     # =========================================================================
-    # ADVERSARIAL BASELINE (Full Judge)
+    # ADVERSARIAL BASELINE (LegalBreak)
     # =========================================================================
     phase_num = 1 + (1 if run_naive else 0) + (1 if run_pair else 0)
     print("="*80)
-    print(f"PHASE {phase_num}: ADVERSARIAL BASELINE (Full Judge)")
+    print(f"PHASE {phase_num}: ADVERSARIAL BASELINE (LegalBreak)")
     print("="*80)
     print("Testing RoboPAIR-style attacks with full policy evaluation")
     print()
@@ -610,7 +612,7 @@ def test_comprehensive_suite(run_naive=True, run_pair=True):
         print()
 
     tier_label = f"TIER {num_modes}"
-    print(f"{tier_label} - ADVERSARIAL BASELINE (Full Judge):")
+    print(f"{tier_label} - ADVERSARIAL BASELINE (LegalBreak):")
     print(f"  Total attacks: {total_attacks}")
     print(f"  Successful jailbreaks: {successful_attacks}")
     print(f"  Attack Success Rate (ASR): {asr:.1f}%")
@@ -621,14 +623,14 @@ def test_comprehensive_suite(run_naive=True, run_pair=True):
         if run_pair and pair_asr is not None:
             print("COMPARISONS:")
             print(f"  Naive → PAIR: {pair_asr - naive_asr:+.1f}% ({('worse' if pair_asr > naive_asr else 'better')} with simple judge)")
-            print(f"  PAIR → Full Judge: {asr - pair_asr:+.1f}% ({('worse' if asr > pair_asr else 'better')} with full policy evaluation)")
-            print(f"  Naive → Full Judge: {asr - naive_asr:+.1f}% (overall change)")
+            print(f"  PAIR → LegalBreak: {asr - pair_asr:+.1f}% ({('worse' if asr > pair_asr else 'better')} with full policy evaluation)")
+            print(f"  Naive → LegalBreak: {asr - naive_asr:+.1f}% (overall change)")
         else:
             improvement = naive_asr - asr
             if improvement > 0:
-                print(f"📉 Full Judge REDUCED ASR by {improvement:.1f}% points vs. naive")
+                print(f"📉 LegalBreak REDUCED ASR by {improvement:.1f}% points vs. naive")
             else:
-                print(f"📈 Full Judge INCREASED ASR by {abs(improvement):.1f}% points vs. naive")
+                print(f"📈 LegalBreak INCREASED ASR by {abs(improvement):.1f}% points vs. naive")
         print()
 
     # Per-category breakdown
@@ -661,27 +663,55 @@ def test_comprehensive_suite(run_naive=True, run_pair=True):
     print()
 
     # Save detailed results to file
-    save_detailed_results(results, attempts, asr, config)
+    print("Saving detailed results and CSV files...")
 
     # Save naive results if available
     if run_naive and naive_results:
         save_detailed_results(naive_results, naive_attempts, naive_asr,
-                            naive_config if 'naive_config' in locals() else None)
+                            naive_config if 'naive_config' in locals() else None,
+                            baseline_name="naive")
+        save_results_csv(naive_results, naive_attempts, naive_asr,
+                        baseline_name="naive")
 
     # Save PAIR results if available
     if run_pair and pair_results:
         save_detailed_results(pair_results, pair_attempts, pair_asr,
-                            pair_config if 'pair_config' in locals() else None)
+                            pair_config if 'pair_config' in locals() else None,
+                            baseline_name="pair")
+        save_results_csv(pair_results, pair_attempts, pair_asr,
+                        baseline_name="pair")
+
+    # Save LegalBreak results
+    save_detailed_results(results, attempts, asr, config,
+                         baseline_name="legalbreak")
+    save_results_csv(results, attempts, asr,
+                    baseline_name="legalbreak")
 
     # Generate visualizations
     print("\nGenerating visualizations...")
-    generate_visualizations(
-        results, asr,
-        naive_results if run_naive else None,
-        naive_asr if run_naive else None,
-        pair_results if run_pair else None,
-        pair_asr if run_pair else None
+
+    # 1. ASR comparison bar chart
+    plot_asr_comparison(
+        naive_asr=naive_asr if run_naive else None,
+        pair_asr=pair_asr if run_pair else None,
+        full_asr=asr
     )
+
+    # 2. Turn distribution by category
+    if run_pair or results:
+        plot_turns_distribution(
+            pair_results=pair_results if run_pair else None,
+            full_results=results
+        )
+
+    # 3. Individual baseline plots
+    if run_pair and pair_results:
+        plot_individual_baseline_asr(pair_results, "PAIR")
+        plot_individual_baseline_attempts(pair_results, "PAIR")
+
+    if results:
+        plot_individual_baseline_asr(results, "LegalBreak")
+        plot_individual_baseline_attempts(results, "LegalBreak")
 
     return (results, asr, attempts,
             naive_results if run_naive else None, naive_asr if run_naive else None,
@@ -704,12 +734,13 @@ if __name__ == "__main__":
             tier_num = 2 if naive_asr else 1
             print(f"  PAIR ASR (Tier {tier_num}): {pair_asr:.1f}%")
         tier_num = 1 + (1 if naive_asr is not None else 0) + (1 if pair_asr is not None else 0)
-        print(f"  Full Judge ASR (Tier {tier_num}): {asr:.1f}%")
+        print(f"  LegalBreak ASR (Tier {tier_num}): {asr:.1f}%")
 
         if naive_asr is not None and pair_asr is not None:
             print(f"\n  Comparisons:")
             print(f"    Naive → PAIR: {pair_asr - naive_asr:+.1f}%")
-            print(f"    PAIR → Full: {asr - pair_asr:+.1f}%")
-            print(f"    Naive → Full: {asr - naive_asr:+.1f}%")
+            print(f"    PAIR → LegalBreak: {asr - pair_asr:+.1f}%")
+            print(f"    Naive → LegalBreak: {asr - naive_asr:+.1f}%")
 
-        print(f"\n  Results and visualizations saved to legal_guarddog/results/")
+        print(f"\n  Results saved to legal_guarddog/results/ (text files and CSV)")
+        print(f"  Visualizations saved to legal_guarddog/results_visualization/")

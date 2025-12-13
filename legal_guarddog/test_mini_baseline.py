@@ -181,7 +181,7 @@ def run_mini_test(run_naive=True, run_pair=True, run_full=True):
         print(f"\n✓ PAIR ASR: {pair_asr:.1f}%\n")
 
     # =========================================================================
-    # FULL JUDGE BASELINE
+    # LEGALBREAK BASELINE
     # =========================================================================
     full_results = []
     full_attempts = []
@@ -189,7 +189,7 @@ def run_mini_test(run_naive=True, run_pair=True, run_full=True):
 
     if run_full:
         print("="*80)
-        print("PHASE 3: FULL JUDGE BASELINE (Policy Evaluation)")
+        print("PHASE 3: LEGALBREAK BASELINE (Policy Evaluation)")
         print("="*80)
         print()
 
@@ -204,7 +204,7 @@ def run_mini_test(run_naive=True, run_pair=True, run_full=True):
         full_guarddog = LegalGuarddog(full_config)
 
         for i, test in enumerate(MINI_TEST_CASES, 1):
-            print(f"\nFULL TEST {i}/3: {test['category'].value.upper()}")
+            print(f"\nLEGALBREAK TEST {i}/3: {test['category'].value.upper()}")
             print(f"Goal: {test['goal']}\n")
 
             attempt = full_guarddog.run_adversarial_test(
@@ -223,7 +223,7 @@ def run_mini_test(run_naive=True, run_pair=True, run_full=True):
             full_attempts.append(attempt)
 
         full_asr = (sum(1 for r in full_results if r['success']) / len(full_results)) * 100
-        print(f"\n✓ Full Judge ASR: {full_asr:.1f}%\n")
+        print(f"\n✓ LegalBreak ASR: {full_asr:.1f}%\n")
 
     # =========================================================================
     # SUMMARY
@@ -238,7 +238,7 @@ def run_mini_test(run_naive=True, run_pair=True, run_full=True):
     if pair_asr is not None:
         print(f"PAIR ASR (Simple Judge): {pair_asr:.1f}%")
     if full_asr is not None:
-        print(f"Full Judge ASR (Policy): {full_asr:.1f}%")
+        print(f"LegalBreak ASR (Policy): {full_asr:.1f}%")
     print()
 
     # =========================================================================
@@ -263,9 +263,9 @@ def run_mini_test(run_naive=True, run_pair=True, run_full=True):
     if run_full and full_results:
         save_detailed_results(full_results, full_attempts, full_asr,
                             full_config if 'full_config' in locals() else None,
-                            baseline_name="full_judge")
+                            baseline_name="legalbreak")
         save_results_csv(full_results, full_attempts, full_asr,
-                        baseline_name="full_judge")
+                        baseline_name="legalbreak")
 
     # =========================================================================
     # GENERATE VISUALIZATIONS
@@ -292,24 +292,24 @@ def run_mini_test(run_naive=True, run_pair=True, run_full=True):
         plot_individual_baseline_attempts(pair_results, "PAIR")
 
     if run_full and full_results:
-        plot_individual_baseline_asr(full_results, "Full Judge")
-        plot_individual_baseline_attempts(full_results, "Full Judge")
+        plot_individual_baseline_asr(full_results, "LegalBreak")
+        plot_individual_baseline_attempts(full_results, "LegalBreak")
 
     print("\n" + "="*80)
     print("✓ MINI TEST COMPLETE!")
     print("="*80)
     print()
     print("Check legal_guarddog/results/ for:")
-    print("  - Detailed results text files (naive_*, pair_*, full_judge_*)")
+    print("  - Detailed results text files (naive_*, pair_*, legalbreak_*)")
     print("  - CSV files for re-plotting (*.csv)")
-    print("  - ASR comparison plot (asr_comparison_*.png)")
-    print("  - Turn distribution plot (turns_distribution_*.png)")
     print()
     print("Check legal_guarddog/results_visualization/ for:")
+    print("  - ASR comparison plot (asr_comparison_*.png)")
+    print("  - Turn distribution plot (turns_distribution_*.png)")
     print("  - PAIR ASR by category (pair_asr_*.png)")
     print("  - PAIR attempt distribution (pair_attempts_*.png)")
-    print("  - Full Judge ASR by category (full_judge_asr_*.png)")
-    print("  - Full Judge attempt distribution (full_judge_attempts_*.png)")
+    print("  - LegalBreak ASR by category (legalbreak_asr_*.png)")
+    print("  - LegalBreak attempt distribution (legalbreak_attempts_*.png)")
     print()
 
 

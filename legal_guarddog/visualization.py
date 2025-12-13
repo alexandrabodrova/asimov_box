@@ -13,7 +13,7 @@ import numpy as np
 def plot_asr_comparison(naive_asr: Optional[float] = None,
                        pair_asr: Optional[float] = None,
                        full_asr: Optional[float] = None,
-                       output_dir: str = "legal_guarddog/results"):
+                       output_dir: str = "legal_guarddog/results_visualization"):
     """
     Create simple bar chart comparing ASR across baselines.
 
@@ -41,7 +41,7 @@ def plot_asr_comparison(naive_asr: Optional[float] = None,
         colors.append('#feca57')
 
     if full_asr is not None:
-        baselines.append('Full Judge\n(Policy)')
+        baselines.append('LegalBreak\n(Policy)')
         asrs.append(full_asr)
         colors.append('#ff6b6b')
 
@@ -78,7 +78,7 @@ def plot_asr_comparison(naive_asr: Optional[float] = None,
 
 def plot_turns_distribution(pair_results: Optional[List[dict]] = None,
                            full_results: Optional[List[dict]] = None,
-                           output_dir: str = "legal_guarddog/results"):
+                           output_dir: str = "legal_guarddog/results_visualization"):
     """
     Create turn distribution plot showing turns to success by category.
 
@@ -121,7 +121,7 @@ def plot_turns_distribution(pair_results: Optional[List[dict]] = None,
             ax.hist(pair_turns, bins=bins, alpha=0.7, label='PAIR', color='#feca57', edgecolor='black')
 
         if full_turns:
-            ax.hist(full_turns, bins=bins, alpha=0.7, label='Full Judge', color='#ff6b6b', edgecolor='black')
+            ax.hist(full_turns, bins=bins, alpha=0.7, label='LegalBreak', color='#ff6b6b', edgecolor='black')
 
         # Formatting
         ax.set_xlabel('Turns to Success', fontsize=11, fontweight='bold')
@@ -130,8 +130,8 @@ def plot_turns_distribution(pair_results: Optional[List[dict]] = None,
         ax.set_xticks([1, 2, 3, 4, 5])
         ax.set_xlim(0.5, 5.5)
         ax.grid(axis='y', alpha=0.3, linestyle='--')
-        if i == 0:  # Only show legend on first plot
-            ax.legend()
+        # Show legend on all plots for clarity
+        ax.legend()
 
     # Save
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -151,7 +151,7 @@ def plot_individual_baseline_asr(results: List[dict], baseline_name: str,
 
     Args:
         results: List of result dictionaries
-        baseline_name: Name of baseline ("PAIR" or "Full Judge")
+        baseline_name: Name of baseline ("PAIR" or "LegalBreak")
         output_dir: Directory to save plot
     """
     from legal_guarddog.policies.legal_policy_engine import RiskCategory
@@ -209,7 +209,7 @@ def plot_individual_baseline_attempts(results: List[dict], baseline_name: str,
 
     Args:
         results: List of result dictionaries
-        baseline_name: Name of baseline ("PAIR" or "Full Judge")
+        baseline_name: Name of baseline ("PAIR" or "LegalBreak")
         output_dir: Directory to save plot
     """
     from legal_guarddog.policies.legal_policy_engine import RiskCategory
