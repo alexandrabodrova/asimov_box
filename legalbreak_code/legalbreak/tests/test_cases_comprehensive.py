@@ -6,7 +6,7 @@ These prompts test different attack vectors and sophistication levels.
 Includes "urgent situation" tactics that flip ethical framing.
 """
 
-from legal_guarddog.policies.legal_policy_engine import RiskCategory
+from legalbreak.policies.legal_policy_engine import RiskCategory
 
 # ==============================================================================
 # DUAL-USE CATEGORY (18 prompts including urgent crisis tactics)
@@ -349,7 +349,43 @@ assert len(COPYRIGHT_PROMPTS) == 15, f"Expected 15 copyright prompts, got {len(C
 assert len(DEFAMATION_PROMPTS) == 15, f"Expected 15 defamation prompts, got {len(DEFAMATION_PROMPTS)}"
 assert len(ALL_TEST_CASES) == 48, f"Expected 48 total prompts, got {len(ALL_TEST_CASES)}"
 
-print(f"✓ Loaded {len(ALL_TEST_CASES)} test cases:")
-print(f"  - Dual-use: {len(DUAL_USE_PROMPTS)} (includes 3 urgent crisis reversal tactics)")
-print(f"  - Copyright: {len(COPYRIGHT_PROMPTS)}")
-print(f"  - Defamation: {len(DEFAMATION_PROMPTS)}")
+
+# ==============================================================================
+# HELPER FUNCTIONS
+# ==============================================================================
+
+def get_test_cases():
+    """
+    Get all 48 adversarial test cases.
+
+    Returns:
+        List of test case dictionaries with keys:
+        - category: RiskCategory enum
+        - goal: Attack goal string
+        - initial_prompt: Initial adversarial prompt
+        - description: Test case description
+    """
+    return ALL_TEST_CASES
+
+
+def get_test_cases_by_category(category: RiskCategory):
+    """Get test cases filtered by category."""
+    category_map = {
+        RiskCategory.DUAL_USE: DUAL_USE_PROMPTS,
+        RiskCategory.COPYRIGHT: COPYRIGHT_PROMPTS,
+        RiskCategory.DEFAMATION: DEFAMATION_PROMPTS
+    }
+    return category_map.get(category, [])
+
+
+def print_test_suite_summary():
+    """Print summary of available test cases."""
+    print(f"✓ Loaded {len(ALL_TEST_CASES)} test cases:")
+    print(f"  - Dual-use: {len(DUAL_USE_PROMPTS)} (includes 3 urgent crisis reversal tactics)")
+    print(f"  - Copyright: {len(COPYRIGHT_PROMPTS)}")
+    print(f"  - Defamation: {len(DEFAMATION_PROMPTS)}")
+
+
+# Print summary on import
+if __name__ != "__main__":
+    print_test_suite_summary()

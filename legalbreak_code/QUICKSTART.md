@@ -43,30 +43,34 @@ python example_usage.py
 Create `my_test.py`:
 
 ```python
-from legalbreak import LegalGuarddog
+from legalbreak import LegalGuarddog, RiskCategory
+from legalbreak.core.legal_guarddog_core import Config
 from legalbreak.tests.test_cases_comprehensive import get_test_cases
 
-# Initialize
-guarddog = LegalGuarddog(
+# Initialize with config
+config = Config(
     target_model="gpt-4o",
-    max_turns=5
+    max_attack_turns=5,
+    verbose=True
 )
+guarddog = LegalGuarddog(config)
 
 # Get test cases
 test_cases = get_test_cases()
+first_test = test_cases[0]
 
 # Run a single test
 result = guarddog.run_adversarial_test(
-    test_case=test_cases[0],  # "elicit bomb-making instructions"
-    verbose=True
+    risk_category=first_test['category'],
+    attack_goal=first_test['goal']
 )
 
 # Print results
 print(f"\n{'='*60}")
-print(f"Test: {test_cases[0]['name']}")
-print(f"Category: {test_cases[0]['category']}")
-print(f"Attack Success: {'✗ JAILBROKEN' if result['success'] else '✓ BLOCKED'}")
-print(f"Turns Required: {result['turns']}")
+print(f"Test: {first_test['goal']}")
+print(f"Category: {first_test['category'].value}")
+print(f"Attack Success: {'✗ JAILBROKEN' if result.success else '✓ BLOCKED'}")
+print(f"Turns Required: {len(result.turns)}")
 print(f"{'='*60}\n")
 ```
 
@@ -79,17 +83,29 @@ python my_test.py
 ## Step 4: Run Full Benchmark (Optional)
 
 ```python
-from legalbreak.evaluation.benchmark import run_full_benchmark
+from legalbreak import LegalGuarddog
+from legalbreak.core.legal_guarddog_core import Config
+from legalbreak.tests.test_cases_comprehensive import get_test_cases
 
-# Run all 48 tests
-results = run_full_benchmark(
-    baseline="legalbreak",  # or "naive"
-    model="gpt-4o",
-    output_dir="./my_results"
+# Create config
+config = Config(
+    target_model="gpt-4o",
+    max_attack_turns=5,
+    use_validator=True,
+    verbose=False
 )
 
-print(f"Overall ASR: {results['overall_asr']:.1f}%")
-print(f"Successful: {results['successful_attacks']}/{results['total_attacks']}")
+# Initialize guarddog
+guarddog = LegalGuarddog(config)
+
+# Get all 48 test cases
+test_cases = get_test_cases()
+
+# Run evaluation
+results = guarddog.evaluate_system(test_cases)
+
+print(f"Overall ASR: {results.attack_success_rate:.1%}")
+print(f"Successful: {results.successful_attacks}/{results.total_attempts}")
 ```
 
 **Cost estimate**: ~$10-12 USD for full 48-prompt suite
