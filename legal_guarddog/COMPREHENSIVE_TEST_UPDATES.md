@@ -161,7 +161,7 @@ legal_guarddog/
 
 ## Notes
 
-- **Model**: Using `gpt-4-turbo` via OpenAI API (not Princeton/Portkey due to Azure filtering)
+- **Model**: Using `gpt-4o` via OpenAI API (not Princeton/Portkey due to Azure filtering)
 - **Judge**: Enabled in both modes to ensure consistent ASR evaluation
 - **Validator**: Disabled in both modes (testing GPT-4's built-in guardrails only)
 - **Urgent crisis tactics**: Test if GPT-4 can be fooled by ethical framing reversals

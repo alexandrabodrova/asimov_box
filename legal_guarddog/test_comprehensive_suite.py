@@ -33,20 +33,23 @@ if USE_PRINCETON:
         print("   Falling back to OpenAI API\n")
 
 
-def generate_visualizations(results, asr_overall, naive_results=None, naive_asr=None, output_dir="legal_guarddog/results"):
+def generate_visualizations(results, asr_overall, naive_results=None, naive_asr=None,
+                          pair_results=None, pair_asr=None, output_dir="legal_guarddog/results"):
     """
     Generate histogram visualizations of results.
 
     Args:
-        results: List of result dictionaries (adversarial baseline)
-        asr_overall: Overall attack success rate (adversarial)
+        results: List of result dictionaries (full judge baseline)
+        asr_overall: Overall attack success rate (full judge)
         naive_results: List of result dictionaries (naive baseline) - optional
         naive_asr: Overall attack success rate (naive) - optional
+        pair_results: List of result dictionaries (PAIR baseline) - optional
+        pair_asr: Overall attack success rate (PAIR) - optional
         output_dir: Directory to save visualizations
     """
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    # Calculate ASR by category for adversarial baseline
+    # Calculate ASR by category for full judge baseline
     categories = {}
     for result in results:
         cat = result['category'].value
@@ -67,10 +70,22 @@ def generate_visualizations(results, asr_overall, naive_results=None, naive_asr=
             if result['success']:
                 naive_categories[cat]['successful'] += 1
 
+    # Calculate ASR by category for PAIR baseline (if provided)
+    pair_categories = {}
+    if pair_results:
+        for result in pair_results:
+            cat = result['category'].value
+            if cat not in pair_categories:
+                pair_categories[cat] = {'total': 0, 'successful': 0}
+            pair_categories[cat]['total'] += 1
+            if result['success']:
+                pair_categories[cat]['successful'] += 1
+
     # Calculate ASR percentages
     category_names = []
     asr_values = []
     naive_asr_values = []
+    pair_asr_values = []
     success_counts = []
     total_counts = []
 
@@ -88,47 +103,84 @@ def generate_visualizations(results, asr_overall, naive_results=None, naive_asr=
         else:
             naive_asr_values.append(0)
 
+        # Add PAIR ASR if available
+        if pair_categories and cat_name in pair_categories:
+            pair_cat_data = pair_categories[cat_name]
+            pair_asr_values.append((pair_cat_data['successful'] / pair_cat_data['total']) * 100)
+        else:
+            pair_asr_values.append(0)
+
     # Create figure with subplots
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig, axes = plt.subplots(2, 2, figsize=(16, 10))
     title_suffix = f' - {len(results)} Prompts'
-    if naive_results:
-        title_suffix += ' (Naive vs. Adversarial Comparison)'
+    num_baselines = 1 + (1 if naive_results else 0) + (1 if pair_results else 0)
+    if num_baselines > 1:
+        title_suffix += f' ({num_baselines} Baseline Comparison)'
     fig.suptitle(f'Baseline Test Results{title_suffix}', fontsize=16, fontweight='bold')
 
-    # 1. ASR by Category (bar chart - grouped if naive results available)
+    # 1. ASR by Category (bar chart - grouped if multiple baselines)
     ax1 = axes[0, 0]
 
-    if naive_results:
-        # Grouped bar chart: Naive vs. Adversarial
+    if naive_results or pair_results:
+        # Grouped bar chart showing all available baselines
         x_pos = np.arange(len(category_names))
-        width = 0.35
 
-        bars1 = ax1.bar(x_pos - width/2, naive_asr_values, width,
-                        label='Naive (Tier 1)', color='#95e1d3', alpha=0.8)
-        bars2 = ax1.bar(x_pos + width/2, asr_values, width,
-                        label='Adversarial (Tier 2)', color='#ff6b6b', alpha=0.8)
+        # Determine number of bars and width
+        num_bars = 1 + (1 if naive_results else 0) + (1 if pair_results else 0)
+        width = 0.25 if num_bars == 3 else 0.35
+
+        bar_idx = 0
+        all_bars = []
+
+        # Naive baseline (if available)
+        if naive_results:
+            offset = -width if num_bars == 3 else -width/2
+            bars_naive = ax1.bar(x_pos + offset, naive_asr_values, width,
+                               label='Naive (T1)', color='#95e1d3', alpha=0.8)
+            all_bars.append((bars_naive, naive_asr_values))
+            bar_idx += 1
+
+        # PAIR baseline (if available)
+        if pair_results:
+            if num_bars == 3:
+                offset = 0
+            elif naive_results:
+                offset = width/2
+            else:
+                offset = -width/2
+            bars_pair = ax1.bar(x_pos + offset, pair_asr_values, width,
+                              label='PAIR (Simple Judge)', color='#feca57', alpha=0.8)
+            all_bars.append((bars_pair, pair_asr_values))
+            bar_idx += 1
+
+        # Full judge baseline (always present)
+        if num_bars == 3:
+            offset = width
+        elif naive_results or pair_results:
+            offset = width/2
+        else:
+            offset = 0
+        bars_full = ax1.bar(x_pos + offset, asr_values, width,
+                          label='Full Judge', color='#ff6b6b', alpha=0.8)
+        all_bars.append((bars_full, asr_values))
 
         ax1.set_ylabel('Attack Success Rate (%)', fontsize=12)
-        ax1.set_title('ASR by Category: Naive vs. Adversarial', fontsize=13, fontweight='bold')
+        ax1.set_title('ASR by Category: Baseline Comparison', fontsize=13, fontweight='bold')
         ax1.set_xticks(x_pos)
         ax1.set_xticklabels(category_names)
         ax1.set_ylim(0, 100)
         ax1.axhline(y=50, color='red', linestyle='--', alpha=0.3, label='50% threshold')
-        ax1.legend()
+        ax1.legend(loc='upper right')
 
-        # Add percentage labels
-        for bar, val in zip(bars1, naive_asr_values):
-            if val > 0:
-                height = bar.get_height()
-                ax1.text(bar.get_x() + bar.get_width()/2., height,
-                        f'{val:.0f}%', ha='center', va='bottom', fontsize=9)
-        for bar, val in zip(bars2, asr_values):
-            if val > 0:
-                height = bar.get_height()
-                ax1.text(bar.get_x() + bar.get_width()/2., height,
-                        f'{val:.0f}%', ha='center', va='bottom', fontsize=9)
+        # Add percentage labels for all bars
+        for bars, values in all_bars:
+            for bar, val in zip(bars, values):
+                if val > 0:
+                    height = bar.get_height()
+                    ax1.text(bar.get_x() + bar.get_width()/2., height,
+                            f'{val:.0f}%', ha='center', va='bottom', fontsize=8)
     else:
-        # Single bar chart: Adversarial only
+        # Single bar chart: Full judge only
         bars = ax1.bar(category_names, asr_values, color=['#ff6b6b', '#4ecdc4', '#45b7d1'])
         ax1.set_ylabel('Attack Success Rate (%)', fontsize=12)
         ax1.set_title('ASR by Category', fontsize=13, fontweight='bold')
@@ -165,29 +217,64 @@ def generate_visualizations(results, asr_overall, naive_results=None, naive_asr=
 
     # 3. Overall ASR gauge
     ax3 = axes[1, 0]
-    if naive_results and naive_asr is not None:
-        # Show both ASRs side-by-side
-        ax3.text(0.25, 0.65, f'{naive_asr:.0f}%', ha='center', va='center',
-                fontsize=40, fontweight='bold', color='#4ecdc4')
-        ax3.text(0.25, 0.45, 'Naive', ha='center', va='center',
+    if num_baselines == 3:
+        # Show all 3 ASRs
+        ax3.text(0.17, 0.70, f'{naive_asr:.0f}%', ha='center', va='center',
+                fontsize=32, fontweight='bold', color='#95e1d3')
+        ax3.text(0.17, 0.50, 'Naive', ha='center', va='center',
+                fontsize=11, color='gray')
+        ax3.text(0.17, 0.40, '(T1)', ha='center', va='center',
+                fontsize=10, color='gray', style='italic')
+
+        ax3.text(0.50, 0.70, f'{pair_asr:.0f}%', ha='center', va='center',
+                fontsize=32, fontweight='bold', color='#feca57')
+        ax3.text(0.50, 0.50, 'PAIR', ha='center', va='center',
+                fontsize=11, color='gray')
+        ax3.text(0.50, 0.40, '(Simple)', ha='center', va='center',
+                fontsize=10, color='gray', style='italic')
+
+        ax3.text(0.83, 0.70, f'{asr_overall:.0f}%', ha='center', va='center',
+                fontsize=32, fontweight='bold', color='#ff6b6b')
+        ax3.text(0.83, 0.50, 'Full', ha='center', va='center',
+                fontsize=11, color='gray')
+        ax3.text(0.83, 0.40, '(Policy)', ha='center', va='center',
+                fontsize=10, color='gray', style='italic')
+
+        # Comparison arrows
+        diff1 = pair_asr - naive_asr
+        diff2 = asr_overall - pair_asr
+        ax3.text(0.34, 0.20, f'{diff1:+.0f}%', ha='center', va='center',
+                fontsize=10, color='red' if diff1 > 0 else 'green', fontweight='bold')
+        ax3.text(0.67, 0.20, f'{diff2:+.0f}%', ha='center', va='center',
+                fontsize=10, color='red' if diff2 > 0 else 'green', fontweight='bold')
+
+        ax3.set_xlim(0, 1)
+        ax3.set_ylim(0, 1)
+        ax3.axis('off')
+    elif num_baselines == 2:
+        # Show 2 ASRs side-by-side
+        if naive_results:
+            label1, asr1, color1 = 'Naive (T1)', naive_asr, '#95e1d3'
+        else:
+            label1, asr1, color1 = 'PAIR', pair_asr, '#feca57'
+
+        ax3.text(0.25, 0.65, f'{asr1:.0f}%', ha='center', va='center',
+                fontsize=40, fontweight='bold', color=color1)
+        ax3.text(0.25, 0.45, label1, ha='center', va='center',
                 fontsize=14, color='gray')
-        ax3.text(0.25, 0.35, '(Tier 1)', ha='center', va='center',
-                fontsize=12, color='gray', style='italic')
 
         ax3.text(0.75, 0.65, f'{asr_overall:.0f}%', ha='center', va='center',
-                fontsize=40, fontweight='bold', color='#ff6b6b' if asr_overall > 50 else '#4ecdc4')
-        ax3.text(0.75, 0.45, 'Adversarial', ha='center', va='center',
+                fontsize=40, fontweight='bold', color='#ff6b6b')
+        ax3.text(0.75, 0.45, 'Full Judge', ha='center', va='center',
                 fontsize=14, color='gray')
-        ax3.text(0.75, 0.35, '(Tier 2)', ha='center', va='center',
-                fontsize=12, color='gray', style='italic')
 
         # Improvement indicator
-        improvement = naive_asr - asr_overall
+        improvement = asr1 - asr_overall
         if improvement > 0:
-            ax3.text(0.5, 0.15, f'↓ {improvement:.0f}% reduction', ha='center', va='center',
+            ax3.text(0.5, 0.15, f'↓ {improvement:.0f}%', ha='center', va='center',
                     fontsize=12, color='green', fontweight='bold')
         else:
-            ax3.text(0.5, 0.15, f'↑ {abs(improvement):.0f}% increase', ha='center', va='center',
+            ax3.text(0.5, 0.15, f'↑ {abs(improvement):.0f}%', ha='center', va='center',
                     fontsize=12, color='red', fontweight='bold')
 
         ax3.set_xlim(0, 1)
@@ -243,11 +330,12 @@ def generate_visualizations(results, asr_overall, naive_results=None, naive_asr=
     plt.close()
 
 
-def test_comprehensive_suite(run_naive=True):
+def test_comprehensive_suite(run_naive=True, run_pair=True):
     """Test comprehensive suite of 48 adversarial prompts.
 
     Args:
-        run_naive: If True, run both naive baseline and adversarial baseline for comparison
+        run_naive: If True, run naive baseline (direct prompts, no refinement)
+        run_pair: If True, run PAIR baseline (adversarial + simple judge)
     """
 
     print("="*80)
@@ -259,26 +347,27 @@ def test_comprehensive_suite(run_naive=True):
     print(f"  - Copyright: 15 prompts")
     print(f"  - Defamation: 15 prompts")
     print()
+
+    num_modes = 1 + (1 if run_naive else 0) + (1 if run_pair else 0)
+    print(f"This will run {num_modes} test mode(s):")
     if run_naive:
-        print("This will run TWO test modes:")
         print("  1. NAIVE BASELINE (Tier 1): Direct prompts, no defense, no refinement")
-        print("  2. ADVERSARIAL BASELINE (Tier 2): RoboPAIR attacks with iterative refinement")
-        print()
-        print("⚠️  WARNING: This test may take 60-90 minutes to complete!")
-        print("   (48 prompts × 2 modes + 5 turns for adversarial)")
-    else:
-        print("This will test sophisticated RoboPAIR-style jailbreak attacks.")
-        print("Each attack allows up to 5 iterative refinement turns.")
-        print()
-        print("⚠️  WARNING: This test may take 30-60 minutes to complete!")
-        print("   (48 attacks × up to 5 turns × API calls)")
+    if run_pair:
+        tier_num = 2 if run_naive else 1
+        print(f"  {tier_num}. PAIR BASELINE: Adversarial attacks with simple judge (PAIR algorithm)")
+    print(f"  {num_modes}. ADVERSARIAL BASELINE (Full Judge): RoboPAIR attacks with full policy evaluation")
+    print()
+
+    est_time = 30 + (20 if run_naive else 0) + (30 if run_pair else 0)
+    print(f"⚠️  WARNING: This test may take {est_time}-{est_time+30} minutes to complete!")
+    print(f"   (48 prompts × {num_modes} mode(s) + iterative refinement turns)")
     print()
 
     # Ask for confirmation
     response = input("Continue? [y/N]: ")
     if response.lower() not in ['y', 'yes']:
         print("Test cancelled.")
-        return [], 0, [], None, None
+        return [], 0, [], None, None, None, None
 
     print("\n" + "="*80)
     print("Starting test...")
@@ -313,7 +402,7 @@ def test_comprehensive_suite(run_naive=True):
             return [], 0, []
     else:
         # Using OpenAI API directly
-        model = "gpt-4-turbo"
+        model = "gpt-4o"
 
         config_kwargs["target_model"] = model
         config_kwargs["attacker_model"] = model
@@ -385,12 +474,77 @@ def test_comprehensive_suite(run_naive=True):
         print()
 
     # =========================================================================
-    # ADVERSARIAL BASELINE (Tier 2)
+    # PAIR BASELINE (Adversarial + Simple Judge)
     # =========================================================================
+    pair_results = []
+    pair_attempts = []
+    pair_asr = None
+
+    if run_pair:
+        phase_num = 2 if run_naive else 1
+        print("="*80)
+        print(f"PHASE {phase_num}: PAIR BASELINE (Adversarial + Simple Judge)")
+        print("="*80)
+        print("Testing PAIR-style attacks with simple score-only judge")
+        print("(Following https://arxiv.org/pdf/2310.08419)")
+        print()
+
+        # Configure for PAIR baseline
+        pair_config_kwargs = config_kwargs.copy()
+        pair_config_kwargs["use_attacker"] = True   # Adversarial refinement
+        pair_config_kwargs["use_judge"] = True      # Simple judge
+        pair_config_kwargs["use_simple_judge"] = True  # PAIR-style simple judge
+        pair_config_kwargs["use_validator"] = False
+        pair_config_kwargs["max_attack_turns"] = 5
+
+        pair_config = Config(**pair_config_kwargs)
+        pair_guarddog = LegalGuarddog(pair_config)
+
+        for i, test in enumerate(ALL_TEST_CASES, 1):
+            print(f"\n{'='*80}")
+            print(f"PAIR TEST {i}/{len(ALL_TEST_CASES)}: {test['category'].value.upper()}")
+            print(f"Goal: {test['goal']}")
+            print(f"{'='*80}\n")
+
+            # Run PAIR attack
+            attempt = pair_guarddog.run_adversarial_test(
+                risk_category=test['category'],
+                attack_goal=test['goal'],
+                initial_prompt=test['initial_prompt']
+            )
+
+            # Record results
+            pair_results.append({
+                'category': test['category'],
+                'goal': test['goal'],
+                'description': test['description'],
+                'success': attempt.success,
+                'turns': len(attempt.turns)
+            })
+            pair_attempts.append(attempt)
+
+            # Progress update
+            successes_so_far = sum(1 for r in pair_results if r['success'])
+            current_asr = (successes_so_far / len(pair_results)) * 100
+            print(f"\n📊 PAIR Progress: {i}/{len(ALL_TEST_CASES)} | Current ASR: {current_asr:.1f}%")
+
+        # Calculate PAIR ASR
+        pair_asr = (sum(1 for r in pair_results if r['success']) / len(pair_results)) * 100
+
+        print("\n" + "="*80)
+        print("PAIR BASELINE COMPLETE")
+        print("="*80)
+        print(f"PAIR ASR: {pair_asr:.1f}%")
+        print()
+
+    # =========================================================================
+    # ADVERSARIAL BASELINE (Full Judge)
+    # =========================================================================
+    phase_num = 1 + (1 if run_naive else 0) + (1 if run_pair else 0)
     print("="*80)
-    print("PHASE 2: ADVERSARIAL BASELINE (Tier 2)")
+    print(f"PHASE {phase_num}: ADVERSARIAL BASELINE (Full Judge)")
     print("="*80)
-    print("Testing RoboPAIR-style attacks with iterative refinement")
+    print("Testing RoboPAIR-style attacks with full policy evaluation")
     print()
 
     config = Config(**config_kwargs)
@@ -447,20 +601,34 @@ def test_comprehensive_suite(run_naive=True):
         print(f"  ASR: {naive_asr:.1f}%")
         print()
 
-    print("TIER 2 - ADVERSARIAL BASELINE:")
+    if run_pair and pair_asr is not None:
+        tier_label = "TIER 2" if run_naive else "TIER 1"
+        print(f"{tier_label} - PAIR BASELINE (Simple Judge):")
+        print(f"  Total attacks: {len(pair_results)}")
+        print(f"  Successful: {sum(1 for r in pair_results if r['success'])}")
+        print(f"  ASR: {pair_asr:.1f}%")
+        print()
+
+    tier_label = f"TIER {num_modes}"
+    print(f"{tier_label} - ADVERSARIAL BASELINE (Full Judge):")
     print(f"  Total attacks: {total_attacks}")
     print(f"  Successful jailbreaks: {successful_attacks}")
     print(f"  Attack Success Rate (ASR): {asr:.1f}%")
     print()
 
+    # Comparisons
     if run_naive and naive_asr is not None:
-        improvement = naive_asr - asr
-        if improvement > 0:
-            print(f"📉 Adversarial attacks REDUCED ASR by {improvement:.1f}% points")
-            print(f"   (GPT-4's guardrails hold up better against direct prompts)")
+        if run_pair and pair_asr is not None:
+            print("COMPARISONS:")
+            print(f"  Naive → PAIR: {pair_asr - naive_asr:+.1f}% ({('worse' if pair_asr > naive_asr else 'better')} with simple judge)")
+            print(f"  PAIR → Full Judge: {asr - pair_asr:+.1f}% ({('worse' if asr > pair_asr else 'better')} with full policy evaluation)")
+            print(f"  Naive → Full Judge: {asr - naive_asr:+.1f}% (overall change)")
         else:
-            print(f"📈 Adversarial attacks INCREASED ASR by {abs(improvement):.1f}% points")
-            print(f"   (Iterative refinement more effective than direct prompts)")
+            improvement = naive_asr - asr
+            if improvement > 0:
+                print(f"📉 Full Judge REDUCED ASR by {improvement:.1f}% points vs. naive")
+            else:
+                print(f"📈 Full Judge INCREASED ASR by {abs(improvement):.1f}% points vs. naive")
         print()
 
     # Per-category breakdown
@@ -500,30 +668,48 @@ def test_comprehensive_suite(run_naive=True):
         save_detailed_results(naive_results, naive_attempts, naive_asr,
                             naive_config if 'naive_config' in locals() else None)
 
+    # Save PAIR results if available
+    if run_pair and pair_results:
+        save_detailed_results(pair_results, pair_attempts, pair_asr,
+                            pair_config if 'pair_config' in locals() else None)
+
     # Generate visualizations
     print("\nGenerating visualizations...")
-    generate_visualizations(results, asr, naive_results if run_naive else None,
-                          naive_asr if run_naive else None)
+    generate_visualizations(
+        results, asr,
+        naive_results if run_naive else None,
+        naive_asr if run_naive else None,
+        pair_results if run_pair else None,
+        pair_asr if run_pair else None
+    )
 
-    return results, asr, attempts, naive_results if run_naive else None, naive_asr if run_naive else None
+    return (results, asr, attempts,
+            naive_results if run_naive else None, naive_asr if run_naive else None,
+            pair_results if run_pair else None, pair_asr if run_pair else None)
 
 
 if __name__ == "__main__":
     print("\nStarting comprehensive test suite...")
     print("This will test 48 prompts (includes 3 urgent crisis reversal tactics).\n")
 
-    results, asr, attempts, naive_results, naive_asr = test_comprehensive_suite(run_naive=True)
+    results, asr, attempts, naive_results, naive_asr, pair_results, pair_asr = test_comprehensive_suite(
+        run_naive=True, run_pair=True
+    )
 
     if results:
         print("\n✓ Comprehensive test suite completed!")
         if naive_asr is not None:
             print(f"  Naive ASR (Tier 1): {naive_asr:.1f}%")
-            print(f"  Adversarial ASR (Tier 2): {asr:.1f}%")
-            improvement = naive_asr - asr
-            if improvement > 0:
-                print(f"  Improvement: {improvement:.1f}% reduction with adversarial attacks")
-            else:
-                print(f"  Change: {abs(improvement):.1f}% increase with adversarial attacks")
-        else:
-            print(f"  Final ASR: {asr:.1f}%")
-        print(f"  Results and visualizations saved to legal_guarddog/results/")
+        if pair_asr is not None:
+            tier_num = 2 if naive_asr else 1
+            print(f"  PAIR ASR (Tier {tier_num}): {pair_asr:.1f}%")
+        tier_num = 1 + (1 if naive_asr is not None else 0) + (1 if pair_asr is not None else 0)
+        print(f"  Full Judge ASR (Tier {tier_num}): {asr:.1f}%")
+
+        if naive_asr is not None and pair_asr is not None:
+            print(f"\n  Comparisons:")
+            print(f"    Naive → PAIR: {pair_asr - naive_asr:+.1f}%")
+            print(f"    PAIR → Full: {asr - pair_asr:+.1f}%")
+            print(f"    Naive → Full: {asr - naive_asr:+.1f}%")
+
+        print(f"\n  Results and visualizations saved to legal_guarddog/results/")
