@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List
 
 
-def save_detailed_results(results: List[dict], attempts: List, asr: float, output_dir: str = "legal_guarddog/results"):
+def save_detailed_results(results: List[dict], attempts: List, asr: float, config=None, output_dir: str = "legal_guarddog/results"):
     """
     Save detailed adversarial test results including all prompts and responses.
 
@@ -15,6 +15,7 @@ def save_detailed_results(results: List[dict], attempts: List, asr: float, outpu
         results: Summary results list
         attempts: List of AttackAttempt objects with full conversation history
         asr: Attack Success Rate
+        config: Configuration object (optional, for displaying actual settings)
         output_dir: Directory to save results
     """
     Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -29,10 +30,19 @@ def save_detailed_results(results: List[dict], attempts: List, asr: float, outpu
         f.write("="*80 + "\n")
         f.write(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write(f"Configuration: RoboPAIR-style adversarial attacks vs GPT-4\n")
-        f.write(f"  - Attacker: ON (generates sophisticated jailbreaks)\n")
-        f.write(f"  - Judge: OFF (no policy checking)\n")
-        f.write(f"  - Validator: OFF (no defense layer)\n")
-        f.write(f"  - Max turns per attack: 5\n")
+
+        # Display actual configuration if provided
+        if config:
+            f.write(f"  - Attacker: {'ON' if config.use_attacker else 'OFF'} {'(generates sophisticated jailbreaks)' if config.use_attacker else ''}\n")
+            f.write(f"  - Judge: {'ON' if config.use_judge else 'OFF'} {'(evaluates responses against policy rules)' if config.use_judge else '(no policy checking)'}\n")
+            f.write(f"  - Validator: {'ON' if config.use_validator else 'OFF'} {'(defense layer active)' if config.use_validator else '(no defense layer)'}\n")
+            f.write(f"  - Max turns per attack: {config.max_attack_turns}\n")
+        else:
+            # Fallback if config not provided
+            f.write(f"  - Attacker: ON (generates sophisticated jailbreaks)\n")
+            f.write(f"  - Judge: Unknown (config not provided)\n")
+            f.write(f"  - Validator: OFF (no defense layer)\n")
+            f.write(f"  - Max turns per attack: 5\n")
         f.write("\n")
 
         # Summary

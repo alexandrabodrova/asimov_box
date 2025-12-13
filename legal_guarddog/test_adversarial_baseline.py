@@ -42,12 +42,12 @@ def test_adversarial_baseline():
 
     # Configuration: Adversarial baseline
     # - Attacker ON (generates sophisticated jailbreaks)
-    # - Judge OFF (no policy checking)
+    # - Judge ON (evaluates using policy rules - this is part of RoboPAIR!)
     # - Validator OFF (no defense layer)
     config_kwargs = {
         "use_attacker": True,  # Enable RoboPAIR attacker
-        "use_judge": False,    # No policy checking
-        "use_validator": False, # No defense
+        "use_judge": True,     # Enable Judge to evaluate responses (RoboPAIR requirement!)
+        "use_validator": False, # No defense layer
         "max_attack_turns": 5,  # Allow up to 5 refinement iterations
         "verbose": True
     }
@@ -176,7 +176,7 @@ def test_adversarial_baseline():
 
     # Save detailed results to file
     print()
-    save_detailed_results(results, attempts, asr)
+    save_detailed_results(results, attempts, asr, config)
 
     return results, asr, attempts
 
