@@ -140,7 +140,7 @@ def save_detailed_results(results: List[dict], attempts: List, asr: float, confi
 
                     # Check if content was actually harmful
                     if hasattr(turn.judge_verdict, 'violations') and turn.judge_verdict.violations:
-                        violation_types = [v.rule_name for v in turn.judge_verdict.violations]
+                        violation_types = [v.rule.name for v in turn.judge_verdict.violations]  # Fix: v.rule.name not v.rule_name
                         explanation_parts.append(f"Policy violations detected: {', '.join(violation_types)}")
 
                     # Check if person verification found real people (for defamation)
