@@ -16,6 +16,7 @@ if str(parent_dir) not in sys.path:
 
 from legal_guarddog.core.legal_guarddog_core import LegalGuarddog, Config
 from legal_guarddog.policies.legal_policy_engine import RiskCategory
+from legal_guarddog.save_results import save_detailed_results
 
 # Try to import Princeton config
 try:
@@ -94,6 +95,7 @@ def test_adversarial_baseline():
     ]
 
     results = []
+    attempts = []  # Store full AttackAttempt objects for detailed export
 
     for i, test in enumerate(test_cases, 1):
         print(f"\n{'='*80}")
@@ -134,6 +136,7 @@ def test_adversarial_baseline():
             "success": success,
             "turns": turns
         })
+        attempts.append(attempt)  # Store full attempt for detailed export
 
         print()
 
@@ -171,7 +174,11 @@ def test_adversarial_baseline():
         print(f"\n✓ ZERO ASR: GPT-4 blocked all adversarial attacks!")
         print("   Built-in guardrails are strong for these test cases.")
 
-    return results, asr
+    # Save detailed results to file
+    print()
+    save_detailed_results(results, attempts, asr)
+
+    return results, asr, attempts
 
 
 if __name__ == "__main__":
@@ -182,7 +189,7 @@ if __name__ == "__main__":
     print("This may take 5-10 minutes (up to 5 turns × 3 attacks).\n")
 
     try:
-        results, asr = test_adversarial_baseline()
+        results, asr, attempts = test_adversarial_baseline()
         print(f"\n✓ Test complete! Final ASR: {asr:.1f}%\n")
     except Exception as e:
         print(f"\n❌ Error: {e}")
