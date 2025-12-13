@@ -1,66 +1,41 @@
-# =====================================
-# Ignore everything by default
-# =====================================
-*
+# Development and working files
+KnowDanger/logs/
+legal_guarddog/results/
+legal_guarddog/results_visualization/
+legal_guarddog/*.md
+legal_guarddog/*.pdf
+legal_guarddog/*.docx
+legal_guarddog/*.zip
+legal_guarddog/_SPI_352__Computational_Final_Project_Bodrova/
+legal_guarddog/debug_gpt_responses.py
+legal_guarddog/save_results.py
+legal_guarddog/visualization.py
+legal_guarddog/test_*.py
+legal_guarddog/check_results.sh
+legal_guarddog/princeton_config.py
+legal_guarddog/evaluation/show_responses.py
+legal_guarddog/evaluation/visualize_results.py
 
-# =====================================
-# Always track .gitignore itself
-# =====================================
-!.gitignore
-
-# =====================================
-# Whitelist the KnowDanger folder
-# =====================================
-!KnowDanger/
-!KnowDanger/**
-
-# =====================================
-# Whitelist the legal_guarddog folder
-# =====================================
-!legal_guarddog/
-!legal_guarddog/**
-
-# =====================================
-# Inside KnowDanger, ignore these subfolders
-# =====================================
-KnowDanger/KnowNo/
-KnowDanger/RoboGuard1/
-
-# =====================================
-# Common junk inside whitelisted dirs
-# =====================================
-# OS junk
-.DS_Store
-.AppleDouble
-.LSOverride
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-.Trash-*
-
-# Python cache
+# Python
 __pycache__/
-*.py[cod]
-*$py.class
+*.pyc
+.env
 
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints/
+# Paper drafts and working files in root
+METHODS_AND_RESULTS.md
+_SPI_352__Computational_Final_Project_Bodrova.zip
+_SPI_352__Computational_Final_Project_Bodrova/
+analyze_results.py
+apply_manual_corrections.py
+average_attack_turns.png
+create_avg_steps_figure.py
+create_corrected_avg_turns_figure.py
+final_report_1.tex
+generate_corrected_plot.py
+naive_vs_legalbreak_comparison.png
+references.bib
 
-# Build / dist artifacts
-build/
-dist/
-*.egg-info/
-.eggs/
-*.egg
-
-# Logs & temp
-*.log
-*.tmp
-*.temp
-
-# IDE/editor settings
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
+# Keep clean submission folders
+!paper_submission/
+!legalbreak_code/
+legal_guarddog/data/
