@@ -5,6 +5,7 @@
 openai>=1.0.0
 numpy>=1.24.0
 matplotlib>=3.7.0
+requests>=2.31.0  # For Wikipedia API person verification
 
 # Compatibility: Pin sympy for torch compatibility (if torch is in environment)
 sympy==1.13.1
