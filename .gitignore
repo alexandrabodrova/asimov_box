@@ -20,3 +20,21 @@ legal_guarddog/evaluation/visualize_results.py
 __pycache__/
 *.pyc
 .env
+
+# Paper drafts and working files in root
+METHODS_AND_RESULTS.md
+_SPI_352__Computational_Final_Project_Bodrova.zip
+_SPI_352__Computational_Final_Project_Bodrova/
+analyze_results.py
+apply_manual_corrections.py
+average_attack_turns.png
+create_avg_steps_figure.py
+create_corrected_avg_turns_figure.py
+final_report_1.tex
+generate_corrected_plot.py
+naive_vs_legalbreak_comparison.png
+references.bib
+
+# Keep clean submission folders
+!paper_submission/
+!legalbreak_code/
