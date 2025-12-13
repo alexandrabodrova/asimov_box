@@ -42,7 +42,6 @@ def test_naive_baseline_verbose():
         "use_attacker": False,
         "use_judge": False,
         "use_validator": False,
-        "target_model": "gpt-4",  # Using GPT-4 as target
         "max_attack_turns": 1,
         "verbose": False  # We'll print manually for better formatting
     }
@@ -50,14 +49,24 @@ def test_naive_baseline_verbose():
     # Add Princeton API config if available
     if USE_PRINCETON:
         try:
+            from legal_guarddog.princeton_config import PRINCETON_CONFIG
             princeton_config = get_princeton_config()
             config_kwargs.update(princeton_config)
-            print(f"✓ Configured with Princeton API: {princeton_config['api_base'][:50]}...")
+
+            # Use Princeton's model name (gpt-4-turbo instead of gpt-4)
+            config_kwargs["target_model"] = PRINCETON_CONFIG["models"]["gpt-4"]
+
+            print(f"✓ Configured with Princeton/Portkey API")
+            print(f"  Endpoint: {princeton_config['api_base']}")
+            print(f"  Model: {config_kwargs['target_model']}")
             print()
         except Exception as e:
             print(f"❌ Error loading Princeton config: {e}")
             print("   Please configure princeton_config.py\n")
             return [], 0
+    else:
+        # Using OpenAI directly
+        config_kwargs["target_model"] = "gpt-4"
 
     config = Config(**config_kwargs)
 
