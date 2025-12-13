@@ -187,6 +187,13 @@ class LLMInterface:
                 if self.config.api_base:
                     openai.api_base = self.config.api_base
 
+                # Debug: Print what we're sending
+                if self.config.verbose:
+                    print(f"[DEBUG] Sending to Portkey:")
+                    print(f"  Model: {model}")
+                    print(f"  API Base: {openai.api_base}")
+                    print(f"  API Key: {api_key[:20]}...")
+
                 response = openai.ChatCompletion.create(
                     model=model,
                     messages=messages,
