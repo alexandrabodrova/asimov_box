@@ -59,11 +59,13 @@ def test_adversarial_baseline():
             config_kwargs.update(princeton_config)
             config_kwargs["target_model"] = PRINCETON_CONFIG["models"]["gpt-4"]
             config_kwargs["attacker_model"] = PRINCETON_CONFIG["models"]["gpt-4"]
+            config_kwargs["judge_model"] = PRINCETON_CONFIG["models"]["gpt-4"]  # Fix: Judge needs Portkey model too!
 
             print(f"✓ Configured with Princeton/Portkey API")
             print(f"  Endpoint: {princeton_config['api_base']}")
             print(f"  Target Model: {config_kwargs['target_model']}")
             print(f"  Attacker Model: {config_kwargs['attacker_model']}")
+            print(f"  Judge Model: {config_kwargs['judge_model']}")
             print()
         except Exception as e:
             print(f"❌ Error loading Princeton config: {e}")
