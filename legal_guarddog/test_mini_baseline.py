@@ -17,7 +17,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from legal_guarddog.core.legal_guarddog_core import LegalGuarddog, Config
 from legal_guarddog.policies.legal_policy_engine import RiskCategory
 from legal_guarddog.save_results import save_detailed_results, save_results_csv
-from legal_guarddog.visualization import plot_asr_comparison, plot_turns_distribution
+from legal_guarddog.visualization import (plot_asr_comparison, plot_turns_distribution,
+                                          plot_individual_baseline_asr, plot_individual_baseline_attempts)
 
 
 # Mini test cases: 1 per category
@@ -271,19 +272,28 @@ def run_mini_test(run_naive=True, run_pair=True, run_full=True):
     # =========================================================================
     print("\nGenerating visualizations...")
 
-    # 1. ASR comparison bar chart
+    # 1. ASR comparison bar chart (main results folder)
     plot_asr_comparison(
         naive_asr=naive_asr if run_naive else None,
         pair_asr=pair_asr if run_pair else None,
         full_asr=full_asr if run_full else None
     )
 
-    # 2. Turn distribution by category (separate file)
+    # 2. Turn distribution by category (main results folder)
     if run_pair or run_full:
         plot_turns_distribution(
             pair_results=pair_results if run_pair else None,
             full_results=full_results if run_full else None
         )
+
+    # 3. Individual baseline plots (results_visualization folder)
+    if run_pair and pair_results:
+        plot_individual_baseline_asr(pair_results, "PAIR")
+        plot_individual_baseline_attempts(pair_results, "PAIR")
+
+    if run_full and full_results:
+        plot_individual_baseline_asr(full_results, "Full Judge")
+        plot_individual_baseline_attempts(full_results, "Full Judge")
 
     print("\n" + "="*80)
     print("✓ MINI TEST COMPLETE!")
@@ -291,9 +301,15 @@ def run_mini_test(run_naive=True, run_pair=True, run_full=True):
     print()
     print("Check legal_guarddog/results/ for:")
     print("  - Detailed results text files (naive_*, pair_*, full_judge_*)")
-    print("  - CSV files for re-plotting (naive_*.csv, pair_*.csv, full_judge_*.csv)")
+    print("  - CSV files for re-plotting (*.csv)")
     print("  - ASR comparison plot (asr_comparison_*.png)")
     print("  - Turn distribution plot (turns_distribution_*.png)")
+    print()
+    print("Check legal_guarddog/results_visualization/ for:")
+    print("  - PAIR ASR by category (pair_asr_*.png)")
+    print("  - PAIR attempt distribution (pair_attempts_*.png)")
+    print("  - Full Judge ASR by category (full_judge_asr_*.png)")
+    print("  - Full Judge attempt distribution (full_judge_attempts_*.png)")
     print()
 
 

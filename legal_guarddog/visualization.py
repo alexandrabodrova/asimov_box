@@ -142,3 +142,123 @@ def plot_turns_distribution(pair_results: Optional[List[dict]] = None,
 
     print(f"✓ Turn distribution plot saved to: {filename}")
     return filename
+
+
+def plot_individual_baseline_asr(results: List[dict], baseline_name: str,
+                                 output_dir: str = "legal_guarddog/results_visualization"):
+    """
+    Plot ASR by category for a single baseline.
+
+    Args:
+        results: List of result dictionaries
+        baseline_name: Name of baseline ("PAIR" or "Full Judge")
+        output_dir: Directory to save plot
+    """
+    from legal_guarddog.policies.legal_policy_engine import RiskCategory
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+    # Calculate ASR by category
+    categories = [RiskCategory.DUAL_USE, RiskCategory.COPYRIGHT, RiskCategory.DEFAMATION]
+    category_labels = ['Dual-Use', 'Copyright', 'Defamation']
+    asrs = []
+
+    for category in categories:
+        cat_results = [r for r in results if r['category'] == category]
+        if cat_results:
+            cat_successes = sum(1 for r in cat_results if r['success'])
+            asr = (cat_successes / len(cat_results)) * 100
+        else:
+            asr = 0
+        asrs.append(asr)
+
+    # Create plot
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    color = '#feca57' if baseline_name == 'PAIR' else '#ff6b6b'
+    bars = ax.bar(category_labels, asrs, color=color, alpha=0.8, edgecolor='black', linewidth=1.5)
+
+    # Add percentage labels
+    for bar, asr in zip(bars, asrs):
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2., height,
+                f'{asr:.1f}%', ha='center', va='bottom', fontsize=14, fontweight='bold')
+
+    # Formatting
+    ax.set_ylabel('Attack Success Rate (%)', fontsize=14, fontweight='bold')
+    ax.set_title(f'{baseline_name} Baseline: ASR by Category', fontsize=16, fontweight='bold', pad=20)
+    ax.set_ylim(0, 100)
+    ax.axhline(y=50, color='red', linestyle='--', alpha=0.3, linewidth=2, label='50% threshold')
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+    ax.legend(fontsize=10)
+
+    # Save
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{output_dir}/{baseline_name.lower().replace(' ', '_')}_asr_{timestamp}.png"
+    plt.tight_layout()
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print(f"✓ {baseline_name} ASR plot saved to: {filename}")
+    return filename
+
+
+def plot_individual_baseline_attempts(results: List[dict], baseline_name: str,
+                                      output_dir: str = "legal_guarddog/results_visualization"):
+    """
+    Plot attempt count distribution for a single baseline.
+
+    Args:
+        results: List of result dictionaries
+        baseline_name: Name of baseline ("PAIR" or "Full Judge")
+        output_dir: Directory to save plot
+    """
+    from legal_guarddog.policies.legal_policy_engine import RiskCategory
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+    categories = [RiskCategory.DUAL_USE, RiskCategory.COPYRIGHT, RiskCategory.DEFAMATION]
+    category_labels = ['Dual-Use', 'Copyright', 'Defamation']
+
+    # Create subplots
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    fig.suptitle(f'{baseline_name} Baseline: Attempt Count Distribution by Category',
+                fontsize=16, fontweight='bold')
+
+    color = '#feca57' if baseline_name == 'PAIR' else '#ff6b6b'
+
+    for i, (category, label) in enumerate(zip(categories, category_labels)):
+        ax = axes[i]
+
+        # Collect successful attack turns for this category
+        turns = [r['turns'] for r in results
+                if r['category'] == category and r['success']]
+
+        # Create histogram
+        bins = np.arange(0.5, 6.5, 1)  # 1, 2, 3, 4, 5 turns
+
+        if turns:
+            ax.hist(turns, bins=bins, alpha=0.8, color=color, edgecolor='black', linewidth=1.5)
+
+        # Formatting
+        ax.set_xlabel('Attempts to Success', fontsize=11, fontweight='bold')
+        ax.set_ylabel('Frequency', fontsize=11, fontweight='bold')
+        ax.set_title(label, fontsize=13, fontweight='bold')
+        ax.set_xticks([1, 2, 3, 4, 5])
+        ax.set_xlim(0.5, 5.5)
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
+
+        # Add count annotation
+        if turns:
+            ax.text(0.95, 0.95, f'Total: {len(turns)} successes',
+                   transform=ax.transAxes, ha='right', va='top',
+                   bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
+                   fontsize=10)
+
+    # Save
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{output_dir}/{baseline_name.lower().replace(' ', '_')}_attempts_{timestamp}.png"
+    plt.tight_layout()
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print(f"✓ {baseline_name} attempts plot saved to: {filename}")
+    return filename
