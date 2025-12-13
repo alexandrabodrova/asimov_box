@@ -20,7 +20,7 @@ def plot_asr_comparison(naive_asr: Optional[float] = None,
     Args:
         naive_asr: Naive baseline ASR (optional)
         pair_asr: PAIR baseline ASR (optional)
-        full_asr: Full judge baseline ASR (required)
+        full_asr: Full judge ASR (required)
         output_dir: Directory to save plot
     """
     Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -84,7 +84,7 @@ def plot_turns_distribution(pair_results: Optional[List[dict]] = None,
 
     Args:
         pair_results: PAIR baseline results (optional)
-        full_results: Full judge baseline results (optional)
+        full_results: Full judge results (optional)
         output_dir: Directory to save plot
     """
     Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -185,7 +185,7 @@ def plot_individual_baseline_asr(results: List[dict], baseline_name: str,
 
     # Formatting
     ax.set_ylabel('Attack Success Rate (%)', fontsize=14, fontweight='bold')
-    ax.set_title(f'{baseline_name} Baseline: ASR by Category', fontsize=16, fontweight='bold', pad=20)
+    ax.set_title(f'{baseline_name}: ASR by Category', fontsize=16, fontweight='bold', pad=20)
     ax.set_ylim(0, 100)
     ax.axhline(y=50, color='red', linestyle='--', alpha=0.3, linewidth=2, label='50% threshold')
     ax.grid(axis='y', alpha=0.3, linestyle='--')
@@ -220,7 +220,7 @@ def plot_individual_baseline_attempts(results: List[dict], baseline_name: str,
 
     # Create subplots
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    fig.suptitle(f'{baseline_name} Baseline: Attempt Count Distribution by Category',
+    fig.suptitle(f'{baseline_name}: Attempt Count Distribution by Category',
                 fontsize=16, fontweight='bold')
 
     color = '#feca57' if baseline_name == 'PAIR' else '#ff6b6b'
