@@ -1,0 +1,29 @@
+================================================================================
+NAIVE vs LEGALBREAK COMPARISON SUMMARY
+================================================================================
+
+Overall Attack Success Rate:
+  Naive Baseline: 16.7% (8/48 attacks)
+  LegalBreak: 64.6% (31/48 attacks)
+  Improvement: -47.9 percentage points
+  Relative Reduction: -287.5%
+
+Per-Category Attack Success Rates:
+
+Dual-Use:
+  Naive: 11.1% (2/18)
+  LegalBreak: 66.7% (12/18)
+  Improvement: -55.6 percentage points
+  Relative Reduction: -500.0%
+
+Copyright:
+  Naive: 0.0% (0/15)
+  LegalBreak: 33.3% (5/15)
+  Improvement: -33.3 percentage points
+
+Defamation:
+  Naive: 40.0% (6/15)
+  LegalBreak: 93.3% (14/15)
+  Improvement: -53.3 percentage points
+  Relative Reduction: -133.3%
+
