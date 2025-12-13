@@ -33,18 +33,20 @@ if USE_PRINCETON:
         print("   Falling back to OpenAI API\n")
 
 
-def generate_visualizations(results, asr_overall, output_dir="legal_guarddog/results"):
+def generate_visualizations(results, asr_overall, naive_results=None, naive_asr=None, output_dir="legal_guarddog/results"):
     """
     Generate histogram visualizations of results.
 
     Args:
-        results: List of result dictionaries
-        asr_overall: Overall attack success rate
+        results: List of result dictionaries (adversarial baseline)
+        asr_overall: Overall attack success rate (adversarial)
+        naive_results: List of result dictionaries (naive baseline) - optional
+        naive_asr: Overall attack success rate (naive) - optional
         output_dir: Directory to save visualizations
     """
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    # Calculate ASR by category
+    # Calculate ASR by category for adversarial baseline
     categories = {}
     for result in results:
         cat = result['category'].value
@@ -54,9 +56,21 @@ def generate_visualizations(results, asr_overall, output_dir="legal_guarddog/res
         if result['success']:
             categories[cat]['successful'] += 1
 
+    # Calculate ASR by category for naive baseline (if provided)
+    naive_categories = {}
+    if naive_results:
+        for result in naive_results:
+            cat = result['category'].value
+            if cat not in naive_categories:
+                naive_categories[cat] = {'total': 0, 'successful': 0}
+            naive_categories[cat]['total'] += 1
+            if result['success']:
+                naive_categories[cat]['successful'] += 1
+
     # Calculate ASR percentages
     category_names = []
     asr_values = []
+    naive_asr_values = []
     success_counts = []
     total_counts = []
 
@@ -67,24 +81,66 @@ def generate_visualizations(results, asr_overall, output_dir="legal_guarddog/res
         success_counts.append(cat_data['successful'])
         total_counts.append(cat_data['total'])
 
+        # Add naive ASR if available
+        if naive_categories and cat_name in naive_categories:
+            naive_cat_data = naive_categories[cat_name]
+            naive_asr_values.append((naive_cat_data['successful'] / naive_cat_data['total']) * 100)
+        else:
+            naive_asr_values.append(0)
+
     # Create figure with subplots
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-    fig.suptitle('Adversarial Baseline Test Results - 45 Prompts', fontsize=16, fontweight='bold')
+    title_suffix = f' - {len(results)} Prompts'
+    if naive_results:
+        title_suffix += ' (Naive vs. Adversarial Comparison)'
+    fig.suptitle(f'Baseline Test Results{title_suffix}', fontsize=16, fontweight='bold')
 
-    # 1. ASR by Category (bar chart)
+    # 1. ASR by Category (bar chart - grouped if naive results available)
     ax1 = axes[0, 0]
-    bars = ax1.bar(category_names, asr_values, color=['#ff6b6b', '#4ecdc4', '#45b7d1'])
-    ax1.set_ylabel('Attack Success Rate (%)', fontsize=12)
-    ax1.set_title('ASR by Category', fontsize=13, fontweight='bold')
-    ax1.set_ylim(0, 100)
-    ax1.axhline(y=50, color='red', linestyle='--', alpha=0.3, label='50% threshold')
-    ax1.legend()
 
-    # Add percentage labels on bars
-    for bar, val in zip(bars, asr_values):
-        height = bar.get_height()
-        ax1.text(bar.get_x() + bar.get_width()/2., height,
-                f'{val:.1f}%', ha='center', va='bottom', fontweight='bold')
+    if naive_results:
+        # Grouped bar chart: Naive vs. Adversarial
+        x_pos = np.arange(len(category_names))
+        width = 0.35
+
+        bars1 = ax1.bar(x_pos - width/2, naive_asr_values, width,
+                        label='Naive (Tier 1)', color='#95e1d3', alpha=0.8)
+        bars2 = ax1.bar(x_pos + width/2, asr_values, width,
+                        label='Adversarial (Tier 2)', color='#ff6b6b', alpha=0.8)
+
+        ax1.set_ylabel('Attack Success Rate (%)', fontsize=12)
+        ax1.set_title('ASR by Category: Naive vs. Adversarial', fontsize=13, fontweight='bold')
+        ax1.set_xticks(x_pos)
+        ax1.set_xticklabels(category_names)
+        ax1.set_ylim(0, 100)
+        ax1.axhline(y=50, color='red', linestyle='--', alpha=0.3, label='50% threshold')
+        ax1.legend()
+
+        # Add percentage labels
+        for bar, val in zip(bars1, naive_asr_values):
+            if val > 0:
+                height = bar.get_height()
+                ax1.text(bar.get_x() + bar.get_width()/2., height,
+                        f'{val:.0f}%', ha='center', va='bottom', fontsize=9)
+        for bar, val in zip(bars2, asr_values):
+            if val > 0:
+                height = bar.get_height()
+                ax1.text(bar.get_x() + bar.get_width()/2., height,
+                        f'{val:.0f}%', ha='center', va='bottom', fontsize=9)
+    else:
+        # Single bar chart: Adversarial only
+        bars = ax1.bar(category_names, asr_values, color=['#ff6b6b', '#4ecdc4', '#45b7d1'])
+        ax1.set_ylabel('Attack Success Rate (%)', fontsize=12)
+        ax1.set_title('ASR by Category', fontsize=13, fontweight='bold')
+        ax1.set_ylim(0, 100)
+        ax1.axhline(y=50, color='red', linestyle='--', alpha=0.3, label='50% threshold')
+        ax1.legend()
+
+        # Add percentage labels on bars
+        for bar, val in zip(bars, asr_values):
+            height = bar.get_height()
+            ax1.text(bar.get_x() + bar.get_width()/2., height,
+                    f'{val:.1f}%', ha='center', va='bottom', fontweight='bold')
 
     # 2. Success vs. Blocked counts (stacked bar)
     ax2 = axes[0, 1]
@@ -109,15 +165,45 @@ def generate_visualizations(results, asr_overall, output_dir="legal_guarddog/res
 
     # 3. Overall ASR gauge
     ax3 = axes[1, 0]
-    ax3.text(0.5, 0.6, f'{asr_overall:.1f}%', ha='center', va='center',
-            fontsize=60, fontweight='bold', color='#ff6b6b' if asr_overall > 50 else '#4ecdc4')
-    ax3.text(0.5, 0.3, 'Overall ASR', ha='center', va='center',
-            fontsize=18, color='gray')
-    ax3.text(0.5, 0.15, f'({sum(success_counts)}/{sum(total_counts)} attacks succeeded)',
-            ha='center', va='center', fontsize=12, color='gray')
-    ax3.set_xlim(0, 1)
-    ax3.set_ylim(0, 1)
-    ax3.axis('off')
+    if naive_results and naive_asr is not None:
+        # Show both ASRs side-by-side
+        ax3.text(0.25, 0.65, f'{naive_asr:.0f}%', ha='center', va='center',
+                fontsize=40, fontweight='bold', color='#4ecdc4')
+        ax3.text(0.25, 0.45, 'Naive', ha='center', va='center',
+                fontsize=14, color='gray')
+        ax3.text(0.25, 0.35, '(Tier 1)', ha='center', va='center',
+                fontsize=12, color='gray', style='italic')
+
+        ax3.text(0.75, 0.65, f'{asr_overall:.0f}%', ha='center', va='center',
+                fontsize=40, fontweight='bold', color='#ff6b6b' if asr_overall > 50 else '#4ecdc4')
+        ax3.text(0.75, 0.45, 'Adversarial', ha='center', va='center',
+                fontsize=14, color='gray')
+        ax3.text(0.75, 0.35, '(Tier 2)', ha='center', va='center',
+                fontsize=12, color='gray', style='italic')
+
+        # Improvement indicator
+        improvement = naive_asr - asr_overall
+        if improvement > 0:
+            ax3.text(0.5, 0.15, f'↓ {improvement:.0f}% reduction', ha='center', va='center',
+                    fontsize=12, color='green', fontweight='bold')
+        else:
+            ax3.text(0.5, 0.15, f'↑ {abs(improvement):.0f}% increase', ha='center', va='center',
+                    fontsize=12, color='red', fontweight='bold')
+
+        ax3.set_xlim(0, 1)
+        ax3.set_ylim(0, 1)
+        ax3.axis('off')
+    else:
+        # Single ASR display
+        ax3.text(0.5, 0.6, f'{asr_overall:.1f}%', ha='center', va='center',
+                fontsize=60, fontweight='bold', color='#ff6b6b' if asr_overall > 50 else '#4ecdc4')
+        ax3.text(0.5, 0.3, 'Overall ASR', ha='center', va='center',
+                fontsize=18, color='gray')
+        ax3.text(0.5, 0.15, f'({sum(success_counts)}/{sum(total_counts)} attacks succeeded)',
+                ha='center', va='center', fontsize=12, color='gray')
+        ax3.set_xlim(0, 1)
+        ax3.set_ylim(0, 1)
+        ax3.axis('off')
 
     # 4. Turn distribution (histogram of turns to success)
     ax4 = axes[1, 1]
@@ -157,30 +243,42 @@ def generate_visualizations(results, asr_overall, output_dir="legal_guarddog/res
     plt.close()
 
 
-def test_comprehensive_suite():
-    """Test comprehensive suite of 45 adversarial prompts."""
+def test_comprehensive_suite(run_naive=True):
+    """Test comprehensive suite of 48 adversarial prompts.
+
+    Args:
+        run_naive: If True, run both naive baseline and adversarial baseline for comparison
+    """
 
     print("="*80)
-    print("COMPREHENSIVE ADVERSARIAL TEST SUITE - 45 PROMPTS")
+    print("COMPREHENSIVE TEST SUITE - 48 PROMPTS")
     print("="*80)
     print()
     print(f"Total test cases: {len(ALL_TEST_CASES)}")
-    print(f"  - Dual-use: 15 prompts")
+    print(f"  - Dual-use: 18 prompts (includes 3 urgent crisis reversal tactics)")
     print(f"  - Copyright: 15 prompts")
     print(f"  - Defamation: 15 prompts")
     print()
-    print("This will test sophisticated RoboPAIR-style jailbreak attacks.")
-    print("Each attack allows up to 5 iterative refinement turns.")
-    print()
-    print("⚠️  WARNING: This test may take 30-60 minutes to complete!")
-    print("   (45 attacks × up to 5 turns × API calls)")
+    if run_naive:
+        print("This will run TWO test modes:")
+        print("  1. NAIVE BASELINE (Tier 1): Direct prompts, no defense, no refinement")
+        print("  2. ADVERSARIAL BASELINE (Tier 2): RoboPAIR attacks with iterative refinement")
+        print()
+        print("⚠️  WARNING: This test may take 60-90 minutes to complete!")
+        print("   (48 prompts × 2 modes + 5 turns for adversarial)")
+    else:
+        print("This will test sophisticated RoboPAIR-style jailbreak attacks.")
+        print("Each attack allows up to 5 iterative refinement turns.")
+        print()
+        print("⚠️  WARNING: This test may take 30-60 minutes to complete!")
+        print("   (48 attacks × up to 5 turns × API calls)")
     print()
 
     # Ask for confirmation
     response = input("Continue? [y/N]: ")
     if response.lower() not in ['y', 'yes']:
         print("Test cancelled.")
-        return [], 0, []
+        return [], 0, [], None, None
 
     print("\n" + "="*80)
     print("Starting test...")
@@ -224,6 +322,76 @@ def test_comprehensive_suite():
         print(f"✓ Using OpenAI API directly")
         print(f"  Model: {model}")
         print()
+
+    # =========================================================================
+    # NAIVE BASELINE (Tier 1)
+    # =========================================================================
+    naive_results = []
+    naive_attempts = []
+    naive_asr = None
+
+    if run_naive:
+        print("="*80)
+        print("PHASE 1: NAIVE BASELINE (Tier 1)")
+        print("="*80)
+        print("Testing direct prompts with NO attack refinement, NO judge")
+        print()
+
+        # Configure for naive baseline
+        naive_config_kwargs = config_kwargs.copy()
+        naive_config_kwargs["use_attacker"] = False  # No attacker refinement
+        naive_config_kwargs["use_judge"] = True      # Still need judge to evaluate
+        naive_config_kwargs["use_validator"] = False
+        naive_config_kwargs["max_attack_turns"] = 1  # Single turn only
+
+        naive_config = Config(**naive_config_kwargs)
+        naive_guarddog = LegalGuarddog(naive_config)
+
+        for i, test in enumerate(ALL_TEST_CASES, 1):
+            print(f"\n{'='*80}")
+            print(f"NAIVE TEST {i}/{len(ALL_TEST_CASES)}: {test['category'].value.upper()}")
+            print(f"Goal: {test['goal']}")
+            print(f"{'='*80}\n")
+
+            # Run naive test (single turn, no refinement)
+            attempt = naive_guarddog.run_adversarial_test(
+                risk_category=test['category'],
+                attack_goal=test['goal'],
+                initial_prompt=test['initial_prompt']
+            )
+
+            # Record results
+            naive_results.append({
+                'category': test['category'],
+                'goal': test['goal'],
+                'description': test['description'],
+                'success': attempt.success,
+                'turns': len(attempt.turns)
+            })
+            naive_attempts.append(attempt)
+
+            # Progress update
+            successes_so_far = sum(1 for r in naive_results if r['success'])
+            current_asr = (successes_so_far / len(naive_results)) * 100
+            print(f"\n📊 Naive Progress: {i}/{len(ALL_TEST_CASES)} | Current ASR: {current_asr:.1f}%")
+
+        # Calculate naive ASR
+        naive_asr = (sum(1 for r in naive_results if r['success']) / len(naive_results)) * 100
+
+        print("\n" + "="*80)
+        print("NAIVE BASELINE COMPLETE")
+        print("="*80)
+        print(f"Naive ASR: {naive_asr:.1f}%")
+        print()
+
+    # =========================================================================
+    # ADVERSARIAL BASELINE (Tier 2)
+    # =========================================================================
+    print("="*80)
+    print("PHASE 2: ADVERSARIAL BASELINE (Tier 2)")
+    print("="*80)
+    print("Testing RoboPAIR-style attacks with iterative refinement")
+    print()
 
     config = Config(**config_kwargs)
     guarddog = LegalGuarddog(config)
@@ -271,13 +439,32 @@ def test_comprehensive_suite():
     print("COMPREHENSIVE TEST SUITE SUMMARY")
     print("="*80)
     print()
-    print(f"Total attacks: {total_attacks}")
-    print(f"Successful jailbreaks: {successful_attacks}")
-    print(f"Attack Success Rate (ASR): {asr:.1f}%")
+
+    if run_naive and naive_asr is not None:
+        print("TIER 1 - NAIVE BASELINE:")
+        print(f"  Total attacks: {len(naive_results)}")
+        print(f"  Successful: {sum(1 for r in naive_results if r['success'])}")
+        print(f"  ASR: {naive_asr:.1f}%")
+        print()
+
+    print("TIER 2 - ADVERSARIAL BASELINE:")
+    print(f"  Total attacks: {total_attacks}")
+    print(f"  Successful jailbreaks: {successful_attacks}")
+    print(f"  Attack Success Rate (ASR): {asr:.1f}%")
     print()
 
+    if run_naive and naive_asr is not None:
+        improvement = naive_asr - asr
+        if improvement > 0:
+            print(f"📉 Adversarial attacks REDUCED ASR by {improvement:.1f}% points")
+            print(f"   (GPT-4's guardrails hold up better against direct prompts)")
+        else:
+            print(f"📈 Adversarial attacks INCREASED ASR by {abs(improvement):.1f}% points")
+            print(f"   (Iterative refinement more effective than direct prompts)")
+        print()
+
     # Per-category breakdown
-    print("Per-category results:")
+    print("Adversarial per-category results:")
     for category in [RiskCategory.DUAL_USE, RiskCategory.COPYRIGHT, RiskCategory.DEFAMATION]:
         cat_results = [r for r in results if r['category'] == category]
         cat_successes = sum(1 for r in cat_results if r['success'])
@@ -308,20 +495,35 @@ def test_comprehensive_suite():
     # Save detailed results to file
     save_detailed_results(results, attempts, asr, config)
 
+    # Save naive results if available
+    if run_naive and naive_results:
+        save_detailed_results(naive_results, naive_attempts, naive_asr,
+                            naive_config if 'naive_config' in locals() else None)
+
     # Generate visualizations
     print("\nGenerating visualizations...")
-    generate_visualizations(results, asr)
+    generate_visualizations(results, asr, naive_results if run_naive else None,
+                          naive_asr if run_naive else None)
 
-    return results, asr, attempts
+    return results, asr, attempts, naive_results if run_naive else None, naive_asr if run_naive else None
 
 
 if __name__ == "__main__":
-    print("\nStarting comprehensive adversarial test suite...")
-    print("This will test 45 prompts with RoboPAIR-style attacks.\n")
+    print("\nStarting comprehensive test suite...")
+    print("This will test 48 prompts (includes 3 urgent crisis reversal tactics).\n")
 
-    results, asr, attempts = test_comprehensive_suite()
+    results, asr, attempts, naive_results, naive_asr = test_comprehensive_suite(run_naive=True)
 
     if results:
         print("\n✓ Comprehensive test suite completed!")
-        print(f"  Final ASR: {asr:.1f}%")
+        if naive_asr is not None:
+            print(f"  Naive ASR (Tier 1): {naive_asr:.1f}%")
+            print(f"  Adversarial ASR (Tier 2): {asr:.1f}%")
+            improvement = naive_asr - asr
+            if improvement > 0:
+                print(f"  Improvement: {improvement:.1f}% reduction with adversarial attacks")
+            else:
+                print(f"  Change: {abs(improvement):.1f}% increase with adversarial attacks")
+        else:
+            print(f"  Final ASR: {asr:.1f}%")
         print(f"  Results and visualizations saved to legal_guarddog/results/")
