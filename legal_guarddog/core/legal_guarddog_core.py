@@ -181,9 +181,13 @@ class LLMInterface:
             return response.choices[0].message.content
 
         except Exception as e:
+            error_msg = f"{type(e).__name__}: {str(e)}"
             if self.config.verbose:
-                print(f"LLM call error: {e}")
-            return f"[ERROR: {type(e).__name__}]"
+                print(f"LLM call error: {error_msg}")
+                import traceback
+                traceback.print_exc()
+            # Always return full error for debugging
+            return f"[ERROR: {error_msg}]"
 
 
 class AttackerAgent:

@@ -43,7 +43,7 @@ def test_naive_baseline_verbose():
         "use_judge": False,
         "use_validator": False,
         "max_attack_turns": 1,
-        "verbose": False  # We'll print manually for better formatting
+        "verbose": True  # Enable to see error details
     }
 
     # Add Princeton API config if available
