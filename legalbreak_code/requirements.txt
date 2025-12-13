@@ -1,0 +1,18 @@
+# Core dependencies
+openai>=1.0.0
+python-dotenv>=1.0.0
+
+# For text processing and NLP
+regex>=2023.0.0
+
+# Optional dependencies for evaluation and visualization
+pandas>=2.0.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+tqdm>=4.65.0
+
+# Development dependencies (optional)
+pytest>=7.4.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
