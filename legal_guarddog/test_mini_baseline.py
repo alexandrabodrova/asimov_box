@@ -16,8 +16,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from legal_guarddog.core.legal_guarddog_core import LegalGuarddog, Config
 from legal_guarddog.policies.legal_policy_engine import RiskCategory
-from legal_guarddog.save_results import save_detailed_results
-from legal_guarddog.test_comprehensive_suite import generate_visualizations
+from legal_guarddog.save_results import save_detailed_results, save_results_csv
+from legal_guarddog.visualization import plot_asr_comparison, plot_turns_distribution
 
 
 # Mini test cases: 1 per category
@@ -243,49 +243,57 @@ def run_mini_test(run_naive=True, run_pair=True, run_full=True):
     # =========================================================================
     # SAVE RESULTS
     # =========================================================================
-    print("Saving detailed results...")
-
-    if run_full and full_results:
-        save_detailed_results(full_results, full_attempts, full_asr,
-                            full_config if 'full_config' in locals() else None)
-        print("✓ Saved full judge results")
+    print("Saving detailed results and CSV files...")
 
     if run_naive and naive_results:
         save_detailed_results(naive_results, naive_attempts, naive_asr,
-                            naive_config if 'naive_config' in locals() else None)
-        print("✓ Saved naive results")
+                            naive_config if 'naive_config' in locals() else None,
+                            baseline_name="naive")
+        save_results_csv(naive_results, naive_attempts, naive_asr,
+                        baseline_name="naive")
 
     if run_pair and pair_results:
         save_detailed_results(pair_results, pair_attempts, pair_asr,
-                            pair_config if 'pair_config' in locals() else None)
-        print("✓ Saved PAIR results")
+                            pair_config if 'pair_config' in locals() else None,
+                            baseline_name="pair")
+        save_results_csv(pair_results, pair_attempts, pair_asr,
+                        baseline_name="pair")
+
+    if run_full and full_results:
+        save_detailed_results(full_results, full_attempts, full_asr,
+                            full_config if 'full_config' in locals() else None,
+                            baseline_name="full_judge")
+        save_results_csv(full_results, full_attempts, full_asr,
+                        baseline_name="full_judge")
 
     # =========================================================================
-    # GENERATE VISUALIZATION
+    # GENERATE VISUALIZATIONS
     # =========================================================================
-    print("\nGenerating visualization...")
+    print("\nGenerating visualizations...")
 
-    # Use the full results for visualization (or whichever is available)
-    primary_results = full_results if run_full else (pair_results if run_pair else naive_results)
-    primary_asr = full_asr if run_full else (pair_asr if run_pair else naive_asr)
+    # 1. ASR comparison bar chart
+    plot_asr_comparison(
+        naive_asr=naive_asr if run_naive else None,
+        pair_asr=pair_asr if run_pair else None,
+        full_asr=full_asr if run_full else None
+    )
 
-    if primary_results:
-        generate_visualizations(
-            primary_results, primary_asr,
-            naive_results if run_naive else None,
-            naive_asr if run_naive else None,
-            pair_results if run_pair else None,
-            pair_asr if run_pair else None
+    # 2. Turn distribution by category (separate file)
+    if run_pair or run_full:
+        plot_turns_distribution(
+            pair_results=pair_results if run_pair else None,
+            full_results=full_results if run_full else None
         )
-        print("✓ Saved visualization")
 
     print("\n" + "="*80)
     print("✓ MINI TEST COMPLETE!")
     print("="*80)
     print()
     print("Check legal_guarddog/results/ for:")
-    print("  - Detailed results text files")
-    print("  - Visualization PNG file")
+    print("  - Detailed results text files (naive_*, pair_*, full_judge_*)")
+    print("  - CSV files for re-plotting (naive_*.csv, pair_*.csv, full_judge_*.csv)")
+    print("  - ASR comparison plot (asr_comparison_*.png)")
+    print("  - Turn distribution plot (turns_distribution_*.png)")
     print()
 
 

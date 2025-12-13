@@ -1,13 +1,17 @@
 """
-Save detailed adversarial test results to a text file.
+Save detailed adversarial test results to a text file and CSV.
 """
 
+import csv
 from datetime import datetime
 from pathlib import Path
-from typing import List
+from typing import List, Dict, Optional
+import matplotlib.pyplot as plt
+import numpy as np
 
 
-def save_detailed_results(results: List[dict], attempts: List, asr: float, config=None, output_dir: str = "legal_guarddog/results"):
+def save_detailed_results(results: List[dict], attempts: List, asr: float, config=None,
+                        output_dir: str = "legal_guarddog/results", baseline_name: str = "adversarial"):
     """
     Save detailed adversarial test results including all prompts and responses.
 
@@ -17,16 +21,25 @@ def save_detailed_results(results: List[dict], attempts: List, asr: float, confi
         asr: Attack Success Rate
         config: Configuration object (optional, for displaying actual settings)
         output_dir: Directory to save results
+        baseline_name: Name of baseline (naive, pair, full_judge) for filename
     """
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{output_dir}/adversarial_baseline_detailed_{timestamp}.txt"
+    filename = f"{output_dir}/{baseline_name}_baseline_detailed_{timestamp}.txt"
+
+    # Determine title based on baseline name
+    if baseline_name == "naive":
+        title = "NAIVE BASELINE TEST - DETAILED RESULTS"
+    elif baseline_name == "pair":
+        title = "PAIR BASELINE TEST (Simple Judge) - DETAILED RESULTS"
+    else:
+        title = "FULL JUDGE BASELINE TEST - DETAILED RESULTS"
 
     with open(filename, 'w', encoding='utf-8') as f:
         # Header
         f.write("="*80 + "\n")
-        f.write("ADVERSARIAL BASELINE TEST - DETAILED RESULTS\n")
+        f.write(f"{title}\n")
         f.write("="*80 + "\n")
         f.write(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write(f"Configuration: RoboPAIR-style adversarial attacks vs GPT-4\n")
@@ -205,4 +218,73 @@ def save_detailed_results(results: List[dict], attempts: List, asr: float, confi
         f.write("="*80 + "\n")
 
     print(f"\n✓ Detailed results saved to: {filename}")
+    return filename
+
+
+def save_results_csv(results: List[dict], attempts: List, asr: float,
+                     output_dir: str = "legal_guarddog/results", baseline_name: str = "adversarial"):
+    """
+    Save results to CSV format for easy re-plotting and analysis.
+
+    Args:
+        results: Summary results list
+        attempts: List of AttackAttempt objects
+        asr: Attack Success Rate
+        output_dir: Directory to save CSV
+        baseline_name: Name of baseline for filename
+    """
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{output_dir}/{baseline_name}_results_{timestamp}.csv"
+
+    with open(filename, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+
+        # Write header
+        writer.writerow([
+            'Attack_ID',
+            'Category',
+            'Goal',
+            'Description',
+            'Success',
+            'Turns',
+            'Turn_Number',
+            'Attacker_Prompt',
+            'Target_Response',
+            'Judge_Compliant',
+            'Judge_Risk_Score',
+            'Simple_Judge_Score'
+        ])
+
+        # Write data
+        for i, (result, attempt) in enumerate(zip(results, attempts), 1):
+            for j, turn in enumerate(attempt.turns, 1):
+                # Extract judge info
+                judge_compliant = turn.judge_verdict.is_compliant if hasattr(turn.judge_verdict, 'is_compliant') else None
+                judge_risk_score = turn.judge_verdict.risk_score if hasattr(turn.judge_verdict, 'risk_score') else None
+
+                # Check if simple judge was used
+                simple_score = None
+                if (hasattr(turn.judge_verdict, 'details') and
+                    turn.judge_verdict.details and
+                    turn.judge_verdict.details.get('simple_judge', False)):
+                    simple_score = turn.judge_verdict.details.get('score', None)
+
+                writer.writerow([
+                    i,
+                    result['category'].value,
+                    result['goal'],
+                    result['description'],
+                    result['success'],
+                    result['turns'],
+                    j,
+                    turn.attacker_prompt,
+                    turn.target_response,
+                    judge_compliant,
+                    judge_risk_score,
+                    simple_score
+                ])
+
+    print(f"✓ CSV results saved to: {filename}")
     return filename
