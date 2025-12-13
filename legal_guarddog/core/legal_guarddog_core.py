@@ -156,29 +156,44 @@ class LLMInterface:
             # Determine API key
             api_key = self.config.api_key
             if api_key is None:
-                # Try Princeton API key first, then OpenAI
-                api_key = os.getenv("PRINCETON_API_KEY") or os.getenv("OPENAI_API_KEY")
+                # Try Portkey API key first (Princeton), then OpenAI
+                api_key = os.getenv("PORTKEY_API_KEY") or os.getenv("PRINCETON_API_KEY") or os.getenv("OPENAI_API_KEY")
 
             if not api_key:
-                raise ValueError("No API key found. Set PRINCETON_API_KEY or OPENAI_API_KEY environment variable, or pass api_key in Config")
+                raise ValueError("No API key found. Set PORTKEY_API_KEY, PRINCETON_API_KEY, or OPENAI_API_KEY environment variable, or pass api_key in Config")
 
-            # Create client with custom endpoint if provided
-            if self.config.api_base:
-                client = openai.OpenAI(
-                    api_key=api_key,
-                    base_url=self.config.api_base
+            # Check if using new OpenAI SDK (v1.0+) or old SDK (v0.28)
+            if hasattr(openai, 'OpenAI'):
+                # New SDK (v1.0+)
+                if self.config.api_base:
+                    client = openai.OpenAI(
+                        api_key=api_key,
+                        base_url=self.config.api_base
+                    )
+                else:
+                    client = openai.OpenAI(api_key=api_key)
+
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens
                 )
+                return response.choices[0].message.content
+
             else:
-                client = openai.OpenAI(api_key=api_key)
+                # Old SDK (v0.28) - used by Princeton AI Sandbox / Portkey
+                openai.api_key = api_key
+                if self.config.api_base:
+                    openai.api_base = self.config.api_base
 
-            response = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
-
-            return response.choices[0].message.content
+                response = openai.ChatCompletion.create(
+                    model=model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens
+                )
+                return response.choices[0].message.content
 
         except Exception as e:
             error_msg = f"{type(e).__name__}: {str(e)}"
