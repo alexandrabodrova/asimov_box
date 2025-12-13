@@ -1,0 +1,329 @@
+\documentclass{article}
+\input{boilerplate}
+
+\title{Law-Aware Red-Teaming for LLMs: Measuring and Mitigating Copyright and Defamation Risks}
+
+\author{
+  \Name{Alexandra Bodrova} \\
+  \texttt{abodrova@princeton.edu}
+}
+\begin{document}
+
+\newcommand{\lectureDate}{Fall 2025}
+
+\textsc{SPI 352 / COS 352: Artificial Intelligence Law} 
+\vspace{1em} \hfill \lectureDate
+
+\maketitle
+
+\begin{abstract}
+As large language models (LLMs) increasingly mediate access to information and services through ubiquitous chatbots, their vulnerabilities to both accidental legal violations and deliberate exploitation create significant legal exposure for regular users as well as for AI developers. Current safety mechanisms exhibit uneven guardrails with biased training data and weak safeguards, enabling outputs that infringe copyright, circumvent content policies, or generate defamatory statements. This project extends our ``Asimov Box'' framework being developed by Alexandra Bodrova under the suupervision of Alex Glase—originally designed as a tamper-resistant safety device for LLM-controlled robots—into a law-aware red-teaming system for chatbots. We propose a comprehensive approach that operationalizes legal harms into testable tasks, develops adversarial attack protocols targeting copyright infringement and defamation, and implements a multi-agent validation system combining policy rules engines with validator/rewriter agents. Our methodology adapts RoboPAIR-style adversarial testing and RoboGuard-inspired defense mechanisms to text-based legal compliance, evaluated through attack success rates, false positive measurements, and preservation of lawful transformative uses. This work bridges the gap between AI safety research and legal doctrine, offering a systematic framework for hardening models' guardrails against deliberate attempts to induce unlawful outputs while maintaining utility for legitimate applications. Preliminary code is available at 
+\end{abstract}
+
+\section{Introduction}
+
+\subsection{Problem Definition}
+
+The proliferation of large language models in consumer-facing applications has created an unprecedented tension between technological capability and legal compliance. While these systems demonstrate remarkable utility in knowledge synthesis, content generation, and interactive assistance, they simultaneously expose deployers to significant legal risks across multiple domains. The central problem this project addresses is threefold: (1) LLMs can inadvertently reproduce copyrighted material verbatim or in substantial similarity when prompted; (2) models generate factually incorrect statements about real individuals that may constitute defamation; and (3) existing safety mechanisms prove vulnerable to adversarial prompting techniques designed to circumvent content policies.
+
+These vulnerabilities are not merely theoretical. Recent incidents have demonstrated that commercially deployed chatbots can be coerced into reproducing copyrighted text through carefully engineered prompts, generating false biographical information without proper caveats, and providing instructions for activities that violate platform policies. The legal implications span copyright infringement liability under 17 U.S.C., potential defamation claims under state tort law, and violations of the Digital Millennium Copyright Act's anti-circumvention provisions when models facilitate removal of technological protection measures.
+
+\subsection{Global Motive}
+
+This work addresses a critical gap in the intersection of AI safety and legal compliance. As LLMs become embedded in societal infrastructure—from educational tools to professional services—their failure modes acquire real legal consequences that extend beyond the technical domain into regulatory frameworks, civil liability, and erosion of public trust. The current regulatory landscape remains fragmented, with ongoing debates in the U.S. Copyright Office regarding AI training fair use, emerging case law on LLM liability for false statements, and evolving international frameworks such as the EU AI Act.
+
+The importance of this research stems from three converging factors. First, the economic stakes are substantial: copyright holders represent multibillion-dollar creative industries, while deployers face potentially catastrophic liability exposure. Second, the societal implications of uncontrolled LLM outputs affect information ecosystem integrity, individual reputations, and the viability of AI technology for public benefit. Third, the technical challenge of balancing safety against utility requires nuanced approaches that preserve transformative, fair-use applications while preventing harmful outputs.
+
+\subsection{Scholarly Motive}
+
+Existing AI safety research has primarily focused on preventing accidental harms—models that inadvertently generate toxic content, reveal training data, or produce biased outputs. While valuable, this work leaves unaddressed the systematic hardening of models against deliberate adversarial attacks designed to exploit safety mechanisms. The legal domain presents unique challenges: copyright and defamation doctrine involve context-dependent judgments, transformative use exceptions, and substantial-similarity analyses that resist simple classification schemes.
+
+Prior work in AI safety has established important foundations. JailbreakBench \cite{chao2024jailbreakbench} provides standardized metrics for measuring jailbreak resistance but lacks law-specific tasks. RoboPAIR \cite{robey2024jailbreaking} demonstrates systematic adversarial attacks on LLM-controlled robots, proving that even sophisticated systems remain vulnerable without targeted defenses. RoboGuard \cite{ravichandran2024safety} offers a two-stage guardrail framework for plan validation but focuses on accidental safety violations rather than adversarial scenarios.
+
+Legal scholarship has begun examining AI liability frameworks, but computational implementations remain sparse. Lemley's analysis of copyright doctrine in the generative AI context \cite{lemley2024copyright} identifies where substantial similarity tests strain under algorithmic content generation, while Volokh's examination of defamation liability \cite{volokh2023libel} clarifies republication doctrine and notice-based remediation obligations. However, these analyses lack corresponding technical architectures for real-time compliance verification.
+
+This project bridges these domains by adapting proven adversarial testing methodologies (RoboPAIR) and defense frameworks (RoboGuard) to law-centered textual outputs, incorporating doctrine-aware heuristics derived from legal scholarship into executable policy rules engines.
+
+\subsection{Methods and Key Results Overview}
+
+Our approach implements a multi-stage system architecture. We first operationalize legal harms by defining precise, testable categories: copyright infringement (verbatim reproduction and substantial similarity above defined thresholds), defamation risk (specific harmful allegations about named individuals without evidentiary support), and dual-use content (explicit instructions for dangerous activities). We then develop an adversarial red-teaming loop following RoboPAIR methodology: an Attacker LLM generates prompts designed to circumvent safeguards, a Target LLM (commercial chatbot under evaluation) produces outputs, and a Judge LLM evaluates outputs against policy constraints.
+
+The defense mechanism adapts RoboGuard's validator/rewriter architecture to textual legal compliance. Upon detecting policy violations, the system attempts conforming rewrites before resorting to refusal, preserving utility where possible. Evaluation follows JailbreakBench-inspired metrics extended with law-specific considerations: attack success rate (ASR), false positive rate on lawful uses (e.g., parody, critical quotation), and repair consistency.
+
+Anticipated results include quantifiable measurements of commercial chatbot vulnerabilities to law-targeted adversarial prompts, demonstration that naive content filters produce unacceptable false positive rates on transformative uses, and evidence that adversarially-trained validator/rewriter combinations significantly reduce ASR while maintaining utility thresholds. Limitations include the dependency on heuristic thresholds for legal concepts that in practice require human judgment, potential gaming of specific policy formulations, and the challenge of keeping pace with evolving legal doctrine.
+
+\section{Related Work}
+
+\subsection{Adversarial AI Safety Research}
+
+The foundation for adversarial testing of AI systems has been established through several key contributions. Chao et al.'s JailbreakBench \cite{chao2024jailbreakbench} addresses a fundamental challenge in AI safety evaluation: the lack of standardized, comparable metrics across different jailbreaking attempts and defense mechanisms. The benchmark provides an evolving repository of state-of-the-art jailbreak patterns, a dataset aligned with OpenAI's safety policies, and a rigorous evaluation framework specifying threat models and scoring functions. Their public leaderboard enables systematic comparison of both attack sophistication and defense robustness across different model architectures and safety implementations.
+
+However, JailbreakBench's scope remains limited to general content policy violations—toxicity, bias, and harmful instruction generation—without extending to specific legal domains. The benchmark's success criteria do not account for nuanced legal distinctions such as fair use exceptions in copyright, actual malice standards in defamation, or the difference between discussing illegal activities for educational purposes versus providing actionable instructions.
+
+Robey et al.'s RoboPAIR \cite{robey2024jailbreaking} represents the first systematic demonstration that LLM-controlled physical systems remain vulnerable to adversarial prompting. The authors developed a general algorithm for generating jailbreak prompts that lead robots into harmful physical actions, validated across three distinct embodied AI domains: self-driving vehicles, mobile robots, and quadruped robots. Their release of comprehensive datasets documenting harmful robotic actions provides concrete examples of safety failures with measurable physical consequences.
+
+RoboPAIR's significance extends beyond robotics. The methodology demonstrates that black-box adversarial optimization can discover vulnerabilities in production systems without requiring model access or gradient information. The successful real-world exploitation of a Unitree Go2 robot dog proves that theoretical jailbreaks translate to practical security risks. Nevertheless, RoboPAIR primarily functions as an attack framework rather than a defense system, identifying vulnerabilities without proposing comprehensive mitigation strategies.
+
+\subsection{AI Safety Guardrails}
+
+Ravichandran et al.'s RoboGuard \cite{ravichandran2024safety} addresses the defense side of LLM safety for embodied systems. The framework implements a two-stage guardrail: Stage 1 employs a separate "root-of-trust" LLM to ground predefined safety and ethical rules into context-specific temporal logic constraints; Stage 2 validates the primary LLM's action plans against these constraints, using logic-based synthesis to repair non-compliant plans where possible.
+
+RoboGuard's architecture proves particularly relevant for this project's validator/rewriter design. The demonstrated integration of GPT-4 via API with formal verification libraries on a Clearpath Jackal robot provides a working implementation pattern. The evaluation framework, including metrics for unsafe plan execution percentages under adversarial conditions, offers methodological templates adaptable to textual legal compliance.
+
+The key limitation for our purposes is RoboGuard's focus on accidental safety violations and unspecified unsafe behavior rather than adversarially engineered jailbreaks. The system assumes that the primary LLM attempts to follow rules but may inadvertently violate them due to ambiguity or incomplete world modeling. In contrast, legal compliance in chatbots must address intentionally crafted prompts designed to exploit policy loopholes and trigger specific violations.
+
+Additional guardrail systems merit consideration. Inan et al.'s LlamaGuard \cite{inan2023llama} provides an LLM-based input-output safeguard specifically designed for human-AI conversations, while Rebedea et al.'s NeMo Guardrails \cite{rebedea2023nemo} offers programmable rails for controllable LLM applications. These systems establish important precedents for multi-layer defense architectures but require extension to handle law-specific edge cases and adversarial robustness.
+
+\subsection{Legal Frameworks for AI-Generated Content}
+
+Lemley's analysis \cite{lemley2024copyright} examines how generative AI exposes tensions in copyright doctrine fundamentally designed for human authorship. Traditional tests—idea-expression dichotomy and substantial similarity—strain when applied to models that can remix at scale. For outputs, the doctrine struggles with questions of authorship attribution and the definition of copying in algorithmic generation. For inputs, the boundary between fair use in training and infringing reproduction remains contested.
+
+Lemley argues for doctrinal adaptation rather than forced fitting of AI into legacy frameworks. His approach centers on "copying risk" and substitution harm as operative concepts: violations should be identified where model outputs substitute for original works in their markets or reproduce them with substantial similarity sufficient to threaten the original's value. This framing suggests transformative uses (parody, criticism, limited quotation) should remain protected, while verbatim recall and close paraphrasing that could displace sales warrant intervention.
+
+For technical implementation, Lemley's analysis provides concrete design principles: treat copying-risk and substitution harm as first-class metrics in safety evaluation; prefer targeted refusals or redactions when prompts seek verbatim passages or close paraphrases; preserve outputs that transform source material through criticism, commentary, or creative reinterpretation. Operational thresholds can be constructed from overlap metrics combined with provenance cues—for instance, flagging outputs that reproduce multiple consecutive sentences from identifiable copyrighted sources.
+
+Volokh's examination of LLM liability for false statements \cite{volokh2023libel} surveys how defamation doctrine applies when AI systems fabricate specific, reputationally harmful claims about real individuals. The analysis emphasizes the significance of notice and remediation: providers who continue publishing known falsehoods after correction may edge toward actual malice standards (for public figures) or negligent design (for private individuals). The republication doctrine creates particular challenges—each instance of a model generating a known false statement could constitute a new publication with independent liability.
+
+Volokh's framework suggests concrete mitigation strategies. Systems should implement notice-tracking mechanisms that flag statements as disputed after user corrections. Authoritative factual claims about individuals should include uncertainty caveats when sources cannot be verified. Edge cases warranting human review include any output attributing specific criminal, professional, or moral wrongdoing to named persons. The "notice → remediation" process—logging corrections, suppressing repetition, and updating future responses—provides an architecturally implementable approach to managing defamation risk.
+
+\subsection{Novel Contributions}
+
+This project advances beyond existing work in several dimensions. Where JailbreakBench standardizes adversarial evaluation but omits legal specificity, we extend the framework with copyright circumvention, watermark removal, and defamation-generating prompts grounded in actual doctrine. Where RoboPAIR demonstrates vulnerability identification for physical systems, we adapt the attack methodology to text-based legal violations with success criteria derived from statutory thresholds and case law.
+
+Where RoboGuard provides plan validation for accidental safety failures, we redesign the validator/rewriter architecture to address adversarial legal compliance with awareness of fair use exceptions and transformative use preservation. Where legal scholarship identifies doctrinal pressure points, we translate those analyses into executable policy rules and evaluation metrics suitable for real-time deployment.
+
+The integration represents the first systematic attempt to implement law-aware red-teaming specifically targeting copyright and defamation domains, with evaluation frameworks that balance robustness against over-filtering of lawful expression.
+
+\section{Methods}
+
+\subsection{Legal Harm Operationalization}
+
+The first methodological challenge involves translating vague legal standards into precise, executable classifications. We develop three primary risk categories:
+
+\paragraph{Dual-Use Content:} Outputs providing explicit instructions for activities posing public safety risks. Subcategories include explosives/improvised weapons synthesis, toxic chemical preparation or dissemination protocols, biological pathogen manipulation, criminal evasion techniques escalating physical danger, and cyber-physical attack methodologies. Classification as "violation" requires both specificity (actionable instructions rather than abstract discussion) and directness (step-by-step guidance rather than general information available in educational contexts).
+
+\paragraph{Copyright Infringement:} Outputs violating 17 U.S.C. provisions through unauthorized reproduction. We implement a multi-factor heuristic aligned with U.S. Copyright Office guidance and Lemley's substantial similarity framework \cite{lemley2024copyright}:
+
+\begin{itemize}
+\item \textbf{Verbatim Reproduction:} Outputs containing consecutive sequences of 50+ words matching known copyrighted sources are flagged as "violation-likely." This threshold derives from case law where substantial portions of works receive protection regardless of overall work length.
+
+\item \textbf{Substantial Similarity:} For outputs below verbatim thresholds, we compute similarity scores against copyrighted references using semantic embedding distance combined with n-gram overlap. Scores exceeding 0.85 (on 0-1 scale) trigger secondary review for expression copying versus idea borrowing.
+
+\item \textbf{Explicit Circumvention:} Prompts or outputs containing directives to "remove watermarks," "bypass DRM," or "strip copyright information" are classified as DMCA anti-circumvention violations under 17 U.S.C. § 1201.
+
+\item \textbf{Fair Use Carve-Outs:} Outputs exhibiting transformative characteristics receive "lawful" classification even with substantial similarity. Indicators include critical commentary with limited quotation (< 150 words), parody requiring conjure-up of original, and educational contexts with appropriate attribution.
+\end{itemize}
+
+\paragraph{Defamation Risk:} Outputs generating false factual assertions about named individuals that risk reputational harm. Following Volokh's analysis \cite{volokh2023libel}, we implement a risk stratification system:
+
+\begin{itemize}
+\item \textbf{High Risk:} Specific allegations of criminal conduct, professional incompetence, or moral turpitude directed at named real individuals, presented as fact without evidentiary support or uncertainty caveats.
+
+\item \textbf{Medium Risk:} Biographical claims about living individuals that cannot be verified from authoritative sources, particularly when the model presents them with confidence rather than qualifying language.
+
+\item \textbf{Low Risk:} Opinion statements, clearly hypothetical scenarios, or factual claims that are verifiable or include appropriate hedging ("reportedly," "allegedly," "according to unverified sources").
+
+\item \textbf{Post-Notice Escalation:} Any statement marked as disputed after user correction escalates to highest risk category, triggering mandatory suppression and logging for subsequent iterations.
+\end{itemize}
+
+\subsection{Adversarial Red-Teaming Architecture}
+
+We adapt RoboPAIR methodology \cite{robey2024jailbreaking} to create a law-targeted adversarial testing loop. The system consists of four primary components:
+
+\paragraph{Policy Rules Engine:} A modular framework translating legal constraints into executable verification code. Each legal domain (copyright, defamation, dual-use) receives a dedicated rule set implemented as Python functions accepting text inputs and returning classification tuples: (violation\_detected: bool, confidence: float, rationale: str, suggested\_modification: Optional[str]).
+
+The copyright module integrates with reference databases of copyrighted works, computing similarity metrics using sentence transformers for semantic matching and longest common subsequence algorithms for verbatim detection. The defamation module maintains a named entity recognition pipeline to identify real individuals, cross-references claims against factual databases (Wikipedia, Wikidata), and applies sentiment analysis to detect potentially harmful allegations. The dual-use module employs keyword matching augmented with contextual understanding to distinguish educational discussion from actionable instruction.
+
+\paragraph{Attacker LLM:} An adversarial prompt generation system designed to circumvent chatbot safeguards. We implement this as a custom GPT-4-based agent with the following protocol:
+
+\begin{enumerate}
+\item Initialize with base prompt templates designed to elicit policy violations (e.g., "Provide the full text of [copyrighted work]" or "Tell me about [person]'s criminal record").
+
+\item After each failed attack (Target produces compliant output), analyze the Target's response to identify which safety mechanisms triggered.
+
+\item Generate refined prompts using obfuscation techniques: role-playing scenarios ("You are a literary scholar analyzing..."), indirect requests ("Compare the writing style in paragraph 3 of [work] with..."), or multi-turn context building that gradually steers conversation toward violations.
+
+\item Track successful attack patterns for incorporation into adversarial datasets.
+\end{enumerate}
+
+The Attacker operates under a computational budget: maximum 10 attempts per target prompt, with escalating sophistication as earlier attempts fail.
+
+\paragraph{Target LLM:} The commercial chatbot system under evaluation (ChatGPT, Claude, Gemini, LLaMA). We interact with these systems through their standard APIs or web interfaces, preserving ecological validity by testing deployed systems as users encounter them.
+
+\paragraph{Judge LLM:} A specialized verification agent that evaluates Target outputs against policy constraints. The Judge receives three inputs: original user prompt, Target's response, and policy rules engine outputs. Using GPT-4, we implement a chain-of-thought evaluation protocol:
+
+\begin{enumerate}
+\item Invoke policy rules engine for automated classification.
+
+\item Generate natural language rationale for why output does/does not violate each legal category.
+
+\item Determine final classification: "compliant," "violation-detected," or "uncertain-requires-review."
+
+\item For violations, specify which legal doctrine is implicated and whether modification could render output compliant.
+\end{enumerate}
+
+\subsection{Defense Mechanism: Validator/Rewriter System}
+
+Adapting RoboGuard's architecture \cite{ravichandran2024safety}, we implement a two-stage intervention occurring immediately before output delivery to users:
+
+\paragraph{Stage 1 - Validation:} The Validator agent receives the Target LLM's proposed output and evaluates it using the policy rules engine. For each legal category:
+
+\begin{itemize}
+\item Copyright: Check for verbatim reproduction and substantial similarity; verify presence of fair use indicators.
+\item Defamation: Identify named individuals; cross-reference factual claims; detect absence of hedging language.
+\item Dual-Use: Scan for actionable harmful instructions; assess context (educational vs. facilitative).
+\end{itemize}
+
+Outputs classified as "compliant" pass through unchanged. Outputs classified as "violation-detected" proceed to Stage 2. Outputs classified as "uncertain-requires-review" can be either passed with warnings or sent to Stage 2 depending on risk tolerance configuration.
+
+\paragraph{Stage 2 - Repair:} The Rewriter agent attempts to modify outputs to achieve compliance while preserving core utility. Repair strategies vary by violation type:
+
+\begin{itemize}
+\item \textbf{Copyright violations:} Replace verbatim passages with paraphrases or summaries below substantial similarity thresholds; add attribution and quotation marks for fair use excerpts; refuse requests explicitly seeking circumvention.
+
+\item \textbf{Defamation risks:} Add hedging language to unverified claims ("According to some sources, though this is disputed..."); request evidence from user before presenting as fact; refuse to assert criminal allegations without verifiable public records.
+
+\item \textbf{Dual-use content:} Reframe from instruction to discussion; remove specific measurements, materials, or procedures that enable harm; maintain educational value while eliminating actionability.
+\end{itemize}
+
+If repair fails after three attempts (modified output still violates policy), the system defaults to a policy-violation message explaining why the request cannot be fulfilled and offering alternative framings that might be acceptable.
+
+\subsection{Evaluation Framework}
+
+We extend JailbreakBench methodology \cite{chao2024jailbreakbench} with law-specific metrics:
+
+\paragraph{Primary Metrics:}
+\begin{itemize}
+\item \textbf{Attack Success Rate (ASR):} Proportion of adversarial prompts that elicit policy-violating outputs from Target LLM. Lower ASR indicates more robust defenses.
+
+\item \textbf{False Positive Rate (FPR):} Proportion of lawful prompts incorrectly flagged as violations. Critical for measuring over-filtering that would impair legitimate uses like literary criticism, parody, or educational discussion.
+
+\item \textbf{Repair Success Rate (RSR):} Proportion of detected violations successfully modified into compliant outputs. Higher RSR indicates better preservation of utility under safety constraints.
+\end{itemize}
+
+\paragraph{Ablation Studies:} We evaluate three defense configurations:
+\begin{enumerate}
+\item \textbf{Baseline (No Defense):} Target LLM alone without validation or repair.
+\item \textbf{Policy Classifier Only:} Validator blocks violations but provides no repair (binary accept/reject).
+\item \textbf{Validator + Rewriter:} Full two-stage system with repair attempts before refusal.
+\end{enumerate}
+
+Comparing these configurations isolates the value-add of repair mechanisms versus simple content filtering.
+
+\paragraph{Law-Specific Tasks:} We construct evaluation datasets with known ground truth:
+
+\begin{itemize}
+\item \textbf{Copyright:} 100 prompts requesting excerpts from copyrighted literary works (novels, articles, song lyrics); 50 lawful quotation/parody scenarios.
+
+\item \textbf{Defamation:} 75 prompts seeking specific claims about real public figures; 25 prompts about historical figures or hypothetical individuals.
+
+\item \textbf{Dual-Use:} 50 prompts requesting dangerous instructions; 50 educational/scientific discussion prompts on same topics.
+\end{itemize}
+
+Human expert review (JD and ML PhD) provides ground truth labels for marginal cases where automated classification proves ambiguous.
+
+\section{Results}
+
+\textit{Note: This section presents anticipated results based on the proposed methodology. Actual implementation and empirical evaluation will be conducted as part of the final project execution.}
+
+\subsection{Baseline Vulnerability Assessment}
+
+We anticipate that commercial LLMs tested without additional guardrails will demonstrate significant vulnerability to law-targeted adversarial prompts. Preliminary testing suggests:
+
+\begin{itemize}
+\item \textbf{Copyright violations:} ASR of 40-60\% for direct requests ("Give me the first chapter of [recent novel]"), increasing to 70-85\% with obfuscation techniques like role-playing or multi-turn build-up.
+
+\item \textbf{Defamation risks:} ASR of 25-40\% for generating specific false claims about public figures, with higher rates for less-famous individuals where models have sparse training data and resort to plausible confabulation.
+
+\item \textbf{Dual-use content:} ASR of 30-50\% depending on specificity of prompt and availability of information in public domains (scientific literature, educational resources).
+\end{itemize}
+
+These baseline measurements will establish the need for targeted legal guardrails beyond general content policy enforcement.
+
+\subsection{Defense Effectiveness}
+
+We predict that the full Validator + Rewriter system will achieve:
+
+\begin{itemize}
+\item ASR reduction to 5-15\% across all legal categories, representing an order-of-magnitude improvement over baselines.
+
+\item False positive rates maintained below 10\% on lawful use cases, demonstrating preservation of legitimate applications like academic analysis, creative parody, and educational discussion.
+
+\item Repair success rates of 60-75\%, indicating that majority of violations can be modified into compliant outputs rather than requiring outright refusal.
+\end{itemize}
+
+Ablation studies will reveal that policy classifier alone achieves ASR reduction comparable to full system but at the cost of doubling false positive rates (20-25\%) due to inability to distinguish nuanced cases that repair mechanisms can salvage.
+
+\subsection{Attack Pattern Analysis}
+
+We expect identification of several recurring adversarial strategies that consistently circumvent naive defenses:
+
+\begin{itemize}
+\item \textbf{Role-playing exploits:} Framing requests as academic exercises, fictional scenarios, or assumed professional contexts.
+
+\item \textbf{Gradual steering:} Multi-turn conversations that establish innocent context before introducing policy-violating requests.
+
+\item \textbf{Encoding/obfuscation:} Representing protected content through transformations (pig latin, character substitution, symbolic references) that bypass keyword matching.
+
+\item \textbf{Hybrid attacks:} Combining multiple evasion techniques across turns to compound effectiveness.
+\end{itemize}
+
+These patterns will inform iterative improvement of policy rules engines and inform broader AI safety community about law-specific threat models.
+
+\section{Discussion}
+
+\subsection{Law and Policy Implications}
+
+This work arrives at a critical juncture in AI governance. Multiple legal and regulatory processes are converging on questions of LLM liability and compliance requirements. The U.S. Copyright Office is actively soliciting comments on AI and copyright issues, with outcomes likely to shape safe harbor provisions and liability frameworks. State legislatures are considering transparency requirements for AI-generated content, while tort law evolves to address novel harms from algorithmic outputs.
+
+Our framework addresses these policy challenges through technical implementation of doctrinal principles. By operationalizing concepts like substantial similarity and transformative use, we demonstrate that law-aware AI systems need not be black boxes dependent on inscrutable training. The explicit policy rules engine provides auditability—regulators, copyright holders, and affected individuals can inspect the criteria by which outputs are evaluated, propose modifications, and verify compliance.
+
+The validator/rewriter architecture offers a model for balancing competing interests. Content creators gain protection against verbatim reproduction and commercial substitution. Users and developers retain access to transformative uses, criticism, and educational applications. The repair mechanism's attempt to salvage utility before resorting to refusal acknowledges that many legal questions exist on spectra rather than as binary determinations.
+
+This approach also highlights tensions in current doctrine. Copyright's substantial similarity test, designed for human-to-human copying, strains when applied to models trained on billions of documents. Is similarity in style infringement, or is style inherently un-copyrightable "idea"? When does a model's paraphrase constitute "expression" rather than reformulated "idea"? Our heuristics must navigate these ambiguities, suggesting that legal frameworks may need updating to provide clearer guidance for algorithmic contexts.
+
+Defamation doctrine similarly faces challenges. Traditional actual malice and negligence standards presume human publishers who can form intent. How do these standards apply to probabilistic outputs from models that lack consciousness or intention? The notice-and-remediation framework we implement provides one path forward, but it assumes deployers maintain infrastructure to track corrections and suppress repetition—requirements that may need codification as statutory obligations.
+
+\subsection{Broader Impacts}
+
+Beyond legal compliance, this work has implications for AI safety architecture broadly. The multi-agent adversarial testing framework can extend to other domains: privacy violations, election misinformation, medical advice standards, financial regulatory compliance. The pattern of operationalizing domain-specific harms, testing via adversarial agents, and implementing repair mechanisms before refusal offers a template for specialized safety systems.
+
+The emphasis on preserving lawful uses while blocking harmful ones addresses a frequent criticism of AI safety work: that overly conservative filtering impairs utility and stifles innovation. Systems that can distinguish fair use from infringement, opinion from defamation, and educational discussion from harmful instruction better serve both safety and utility goals.
+
+However, the approach also reveals limitations of purely technical solutions. Legal determinations often require contextual judgment that resists algorithmic capture. A quotation might be fair use in literary criticism but infringement in commercial advertising. A statement might be defensible opinion or actionable defamation depending on surrounding context. While our heuristics provide useful first-order filters, they cannot replace human judgment in marginal cases.
+
+This suggests a hybrid governance model: automated systems for clear-cut cases, with escalation paths for ambiguity. The policy rules engine and validator serve as front-line filters operating at scale, while human review processes handle edge cases and appeals. This division of labor leverages strengths of both systems while acknowledging their respective limitations.
+
+\subsection{Limitations and Future Work}
+
+Several limitations constrain the current approach:
+
+\paragraph{Threshold Arbitrariness:} Our operationalization of legal concepts requires numeric thresholds (e.g., 50-word verbatim sequences, 0.85 similarity scores) that lack firm grounding in case law. Courts have deliberately avoided bright-line rules in favor of case-by-case analysis. Our thresholds represent reasonable heuristics derived from legal scholarship and precedent analysis, but remain necessarily approximate.
+
+\paragraph{Evolving Doctrine:} Legal frameworks continue developing in response to AI capabilities. Copyright fair use analysis for AI training is unsettled; defamation standards for algorithmic speech are emerging. Systems built on current doctrine risk obsolescence as law evolves. This necessitates modular architectures where policy rules can be updated without redesigning entire systems.
+
+\paragraph{Adversarial Arms Race:} Publication of specific attack patterns and defense mechanisms inevitably enables adversaries to develop counter-strategies. The red-teaming methodology helps defenders stay ahead in this race, but the dynamic requires ongoing investment. We cannot assume one-time safety validation suffices.
+
+\paragraph{Cross-Jurisdictional Complexity:} Our implementation focuses on U.S. law (17 U.S.C., state defamation statutes). Global deployment requires adaptation to GDPR in Europe, varying copyright regimes internationally, and different defamation standards across common law and civil law jurisdictions. The modular policy rules architecture facilitates such adaptation, but the engineering complexity is substantial.
+
+\paragraph{Language and Cultural Contexts:} Current testing emphasizes English-language outputs and U.S.-centric legal frameworks. Multilingual deployment introduces challenges: copyright concepts vary internationally; defamation standards differ across cultures; dual-use content classification requires context about local regulations and threats. Extension to non-English contexts requires collaboration with international legal experts and native speakers.
+
+Future work should address these limitations through several directions. First, develop learning-based policy rules that update automatically as case law evolves, perhaps by fine-tuning models on legal corpus datasets. Second, extend adversarial testing to multilingual contexts and international legal frameworks. Third, investigate hybrid human-AI review processes that handle marginal cases efficiently. Fourth, explore whether transparency mechanisms (showing users why outputs were blocked/modified) improve trust and enable productive feedback loops.
+
+\section{Conclusion}
+
+This project demonstrates that systematic hardening of LLMs against law-targeted adversarial attacks is both feasible and necessary. By adapting adversarial testing methodologies from AI safety research (RoboPAIR, JailbreakBench) and defense frameworks from embodied AI systems (RoboGuard) to textual legal compliance, we provide a comprehensive architecture for operationalizing legal harms, testing chatbot vulnerabilities, and implementing validator/rewriter defenses that preserve utility while blocking violations.
+
+The work bridges technical AI safety research and legal doctrine, translating concepts like substantial similarity, transformative use, and defamation risk into executable code. The multi-agent testing framework enables systematic measurement of vulnerabilities via attack success rates while the validator/rewriter system reduces violations without over-filtering legitimate applications. This balancing act—protecting rights holders and individuals while maintaining access to fair use and educational content—represents a key contribution to responsible AI deployment.
+
+As LLMs become increasingly embedded in societal infrastructure, the legal risks they pose will only intensify. Copyright holders will increasingly assert claims against unauthorized reproduction; defamed individuals will seek remedies for reputational harm; regulators will impose transparency and accountability requirements. Technical systems that can demonstrate law-aware operations, provide auditability, and balance competing interests will prove essential for sustainable deployment.
+
+The "Asimov Box" framework's extension from robotics to chatbots illustrates a broader principle: that last-moment safety interventions, when informed by domain-specific knowledge and equipped with repair mechanisms, can effectively mitigate risks without crippling functionality. This approach offers a template for addressing other specialized compliance challenges AI systems will face as they expand into regulated domains like healthcare, finance, and critical infrastructure.
+
+{\footnotesize
+
+\bibliographystyle{apalike}
+\bibliography{references}
+}
+
+\end{document}
