@@ -25,11 +25,11 @@ PRINCETON_CONFIG = {
 
     # Model names available through Princeton AI Sandbox / Portkey
     # Note: Model names are case-sensitive and must match Portkey's routing config
-    # Based on your princeton_api.py, try gpt-3.5-turbo-16k first
+    # Confirmed working models: gpt-4-turbo, gpt-4o
     "models": {
-        "gpt-4": "gpt-3.5-turbo-16k",  # Using 3.5 for now (cheaper, more reliable)
-        "gpt-3.5-turbo": "gpt-3.5-turbo-16k",  # Princeton uses 16k variant
-        "gemini": "gemini-pro",  # Optional: Google's Gemini
+        "gpt-4": "gpt-4-turbo",  # Confirmed working
+        "gpt-3.5-turbo": "gpt-4-turbo",  # Map to gpt-4-turbo (3.5 not available)
+        "gpt-4o": "gpt-4o",  # Also works
     }
 }
 
