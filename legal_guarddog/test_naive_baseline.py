@@ -114,8 +114,8 @@ def test_naive_baseline_verbose():
         print(f"GPT-4 RESPONSE:")
         print(f"{'-'*80}")
 
-        # Call GPT-4 directly
-        response = guarddog._call_target_llm(test['prompt'], "gpt-4")
+        # Call target LLM (use configured model)
+        response = guarddog._call_target_llm(test['prompt'], config.target_model)
         print(response)
 
         # Check refusal detection
