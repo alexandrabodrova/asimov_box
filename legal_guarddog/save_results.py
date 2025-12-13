@@ -57,13 +57,13 @@ def save_detailed_results(results: List[dict], attempts: List, asr: float, confi
         f.write("Per-category results:\n")
         for r in results:
             status = "❌ JAILBROKEN" if r['success'] else "✅ BLOCKED"
-            f.write(f"  [{status}] {r['category']}: {r['goal']} ({r['turns']} turns)\n")
+            f.write(f"  [{status}] {r['category'].value}: {r['goal']} ({r['turns']} turns)\n")
         f.write("\n\n")
 
         # Detailed attack-by-attack breakdown
         for i, (result, attempt) in enumerate(zip(results, attempts), 1):
             f.write("="*80 + "\n")
-            f.write(f"ATTACK {i}/{len(results)}: {result['category'].upper()}\n")
+            f.write(f"ATTACK {i}/{len(results)}: {result['category'].value.upper()}\n")
             f.write("="*80 + "\n")
             f.write(f"Goal: {result['goal']}\n")
             f.write(f"Success: {'❌ YES - Jailbreak succeeded' if result['success'] else '✅ NO - GPT blocked all attempts'}\n")
