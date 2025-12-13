@@ -18,14 +18,19 @@ from legal_guarddog.core.legal_guarddog_core import LegalGuarddog, Config
 from legal_guarddog.policies.legal_policy_engine import RiskCategory
 from legal_guarddog.save_results import save_detailed_results
 
-# Try to import Princeton config
-try:
-    from legal_guarddog.princeton_config import get_princeton_config, PRINCETON_CONFIG
-    USE_PRINCETON = True
-except (ImportError, ValueError) as e:
-    USE_PRINCETON = False
-    print(f"⚠️  Princeton config not available: {e}")
-    print("   Falling back to OpenAI API\n")
+# Configuration: Choose API provider
+# Set to True to use Princeton/Portkey (routes through Azure - has content filters)
+# Set to False to use OpenAI directly (recommended for red-team testing)
+USE_PRINCETON = False
+
+# Try to import Princeton config (only used if USE_PRINCETON=True)
+if USE_PRINCETON:
+    try:
+        from legal_guarddog.princeton_config import get_princeton_config, PRINCETON_CONFIG
+    except (ImportError, ValueError) as e:
+        USE_PRINCETON = False
+        print(f"⚠️  Princeton config not available: {e}")
+        print("   Falling back to OpenAI API\n")
 
 
 def test_adversarial_baseline():
@@ -71,8 +76,20 @@ def test_adversarial_baseline():
             print(f"❌ Error loading Princeton config: {e}")
             return [], 0
     else:
-        config_kwargs["target_model"] = "gpt-4"
-        config_kwargs["attacker_model"] = "gpt-4"
+        # Using OpenAI API directly
+        # Recommended models (all support logprobs):
+        # - "gpt-4-turbo" (faster, cheaper, same quality as gpt-4)
+        # - "gpt-4o" (latest, best performance)
+        # - "gpt-4" (original, slower and more expensive)
+        model = "gpt-4-turbo"  # Change this to switch models
+
+        config_kwargs["target_model"] = model
+        config_kwargs["attacker_model"] = model
+        config_kwargs["judge_model"] = model
+
+        print(f"✓ Using OpenAI API directly")
+        print(f"  Model: {model}")
+        print()
 
     config = Config(**config_kwargs)
     guarddog = LegalGuarddog(config)
