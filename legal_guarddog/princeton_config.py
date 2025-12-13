@@ -9,12 +9,11 @@ import os
 
 # Princeton API Configuration
 PRINCETON_CONFIG = {
-    # API endpoint - Update this with Princeton's actual endpoint
-    # Common formats:
-    # - "https://api.princeton.edu/llm/v1"
-    # - "https://princeton-openai.azure.com/openai/deployments/YOUR-DEPLOYMENT/chat/completions"
-    # - "https://llm.princeton.edu/v1"
-    "api_base": os.getenv("PRINCETON_API_BASE", "REPLACE_WITH_PRINCETON_ENDPOINT"),
+    # API endpoint - Princeton AI Sandbox
+    # If this doesn't work, try:
+    # - "https://ai-sandbox.princeton.edu" (without /v1)
+    # - "https://ai-sandbox.princeton.edu/openai/v1"
+    "api_base": os.getenv("PRINCETON_API_BASE", "https://ai-sandbox.princeton.edu/v1"),
 
     # API key - Will automatically use PRINCETON_API_KEY environment variable
     "api_key": os.getenv("PRINCETON_API_KEY"),
